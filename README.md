@@ -38,7 +38,7 @@ Le MSI est construit avec le SDK .NET 10 et WiX Toolset 6. Depuis la racine du d
 
 ```powershell
 dotnet publish .\CodexQuotaTray.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o .\installer\app-single
-dotnet build .\installer\CodexQuotaTray.wixproj -c Release
+dotnet build .\installer\CodexQuotaTrayInstaller.wixproj -c Release
 ```
 
 Le MSI est produit dans `installer\bin\x64\Release\CodexQuotaTray.msi`. Les exécutables, MSI et autres sorties de compilation sont exclus du dépôt; ils sont générés localement avec ces commandes.
