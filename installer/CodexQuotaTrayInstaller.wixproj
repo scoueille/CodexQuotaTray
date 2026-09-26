@@ -6,4 +6,7 @@
     <Platform>x64</Platform>
     <DefineConstants>PayloadDir=$(MSBuildProjectDirectory)\app-single</DefineConstants>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Util.wixext" Version="6.0.2" />
+  </ItemGroup>
 </Project>

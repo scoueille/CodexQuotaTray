@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Menu.StatusStartup" xml:space="preserve"><value>Kontingent wird gelesen…</value></data>
+  <data name="Menu.StatusLoading" xml:space="preserve"><value>Codex-Kontingent wird gelesen…</value></data>
+  <data name="Menu.Refresh" xml:space="preserve"><value>Aktualisieren</value></data>
+  <data name="Menu.StartWithWindows" xml:space="preserve"><value>Mit Windows starten</value></data>
+  <data name="Menu.SignIn" xml:space="preserve"><value>Bei Codex CLI anmelden…</value></data>
+  <data name="Menu.OpenDashboard" xml:space="preserve"><value>Nutzungsübersicht öffnen</value></data>
+  <data name="Menu.Version" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="Menu.Quit" xml:space="preserve"><value>Beenden</value></data>
+  <data name="Dialog.AutoStartTitle" xml:space="preserve"><value>Codex Quota Tray</value></data>
+  <data name="Dialog.AutoStartError" xml:space="preserve"><value>Die Windows-Starteinstellung konnte nicht geändert werden: {0}</value></data>
+  <data name="Tooltip.Loading" xml:space="preserve"><value>Codex-Kontingent: wird gelesen…</value></data>
+  <data name="Tooltip.Unavailable" xml:space="preserve"><value>Codex-Kontingent nicht verfügbar — Rechtsklick für Hilfe oder Anmeldung</value></data>
+  <data name="Tooltip.Quota" xml:space="preserve"><value>Woche {0} % · 5 Std. {1} % | Rücksetzung: 5 Std. {2}, Woche {3}</value></data>
+  <data name="Error.CliNotFound" xml:space="preserve"><value>Codex CLI nicht gefunden. Installiere Codex CLI und aktualisiere dann.</value></data>
+  <data name="Status.ReadingQuota" xml:space="preserve"><value>Codex-Kontingent wird gelesen…</value></data>
+  <data name="Status.Summary" xml:space="preserve"><value>5 Std. {0} % · Woche {1} %</value></data>
+  <data name="Status.Details" xml:space="preserve"><value>{0} · Tag {1:0} % ({2})</value></data>
+  <data name="Status.SignInComplete" xml:space="preserve"><value>Melde dich im Codex-CLI-Fenster an und aktualisiere dann.</value></data>
+  <data name="Error.LoginStart" xml:space="preserve"><value>Anmeldung konnte nicht gestartet werden: {0}</value></data>
+  <data name="Pace.Unavailable" xml:space="preserve"><value>nicht verfügbar</value></data>
+  <data name="Pace.Green" xml:space="preserve"><value>grün</value></data>
+  <data name="Pace.Yellow" xml:space="preserve"><value>gelb</value></data>
+  <data name="Pace.Orange" xml:space="preserve"><value>orange</value></data>
+  <data name="Pace.Red" xml:space="preserve"><value>rot</value></data>
+  <data name="Pace.Purple" xml:space="preserve"><value>violett</value></data>
+  <data name="Notification.Title" xml:space="preserve"><value>Codex-Kontingent</value></data>
+  <data name="Notification.DailyThreshold" xml:space="preserve"><value>{0} % des Tagesziels</value></data>
+  <data name="Notification.DailyPrefix" xml:space="preserve"><value>Wochennutzungsrate</value></data>
+  <data name="Notification.DailyLine" xml:space="preserve"><value>Wochennutzungsrate: {0}.</value></data>
+  <data name="Notification.FiveHourThreshold" xml:space="preserve"><value>unter {0} %</value></data>
+  <data name="Notification.FiveHourPrefix" xml:space="preserve"><value>Verbleibendes 5-Stunden-Kontingent</value></data>
+  <data name="Notification.FiveHourLine" xml:space="preserve"><value>Verbleibendes 5-Stunden-Kontingent: {0}.</value></data>
+  <data name="List.And" xml:space="preserve"><value> und </value></data>
+  <data name="List.Separator" xml:space="preserve"><value>, </value></data>
+  <data name="Error.CliNotConnected" xml:space="preserve"><value>Codex CLI ist nicht angemeldet. Rechtsklick → „Bei Codex CLI anmelden…“, dann aktualisieren.</value></data>
+  <data name="Error.AppServerStart" xml:space="preserve"><value>Codex App-Server konnte nicht gestartet werden.</value></data>
+  <data name="Error.AppServerClosed" xml:space="preserve"><value>Codex App-Server hat die Verbindung geschlossen.</value></data>
+  <data name="Error.PrimaryQuotaMissing" xml:space="preserve"><value>Codex hat für dieses Konto kein primäres Kontingent zurückgegeben.</value></data>
+  <data name="Error.Generic" xml:space="preserve"><value>Codex-Fehler.</value></data>
+  <data name="Error.StartupKeyUnavailable" xml:space="preserve"><value>Der Windows-Autostart-Registrierungsschlüssel konnte nicht geöffnet werden.</value></data>
+</root>

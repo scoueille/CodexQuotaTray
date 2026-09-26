@@ -10,10 +10,13 @@ namespace CodexQuotaTray;
 
 internal static class Program
 {
+    internal static string AppVersion { get; } = typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "unknown";
+
     // Démarre uniquement la fenêtre cachée qui porte l'icône et la boucle d'actualisation.
     [STAThread]
     private static void Main()
     {
+        AppText.Initialize();
         ApplicationConfiguration.Initialize();
         Application.Run(new TrayApplicationForm());
     }
@@ -37,13 +40,13 @@ internal sealed class TrayApplicationForm : Form
         FormBorderStyle = FormBorderStyle.FixedToolWindow;
         Opacity = 0;
         _codexPath = CodexCli.FindPath();
-        _statusItem = new ToolStripMenuItem("Lecture du quota…") { Enabled = false };
+        _statusItem = new ToolStripMenuItem(AppText.Get("Menu.StatusStartup")) { Enabled = false };
 
         var menu = new ContextMenuStrip();
         menu.Items.Add(_statusItem);
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Actualiser", null, (_, _) => RefreshQuota());
-        var startupItem = new ToolStripMenuItem("Lancer avec Windows")
+        menu.Items.Add(AppText.Get("Menu.Refresh"), null, (_, _) => RefreshQuota());
+        var startupItem = new ToolStripMenuItem(AppText.Get("Menu.StartWithWindows"))
         {
             CheckOnClick = true,
             Checked = StartupRegistration.IsEnabled()
@@ -57,20 +60,21 @@ internal sealed class TrayApplicationForm : Form
             catch (Exception ex)
             {
                 startupItem.Checked = !startupItem.Checked;
-                MessageBox.Show($"Impossible de modifier le démarrage automatique : {ex.Message}", "Codex Quota Tray", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(AppText.Format("Dialog.AutoStartError", ex.Message), AppText.Get("Dialog.AutoStartTitle"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         };
         menu.Items.Add(startupItem);
-        menu.Items.Add("Se connecter à Codex CLI…", null, (_, _) => StartLogin());
-        menu.Items.Add("Ouvrir le tableau de bord", null, (_, _) => OpenUsageDashboard());
+        menu.Items.Add(AppText.Get("Menu.SignIn"), null, (_, _) => StartLogin());
+        menu.Items.Add(AppText.Get("Menu.OpenDashboard"), null, (_, _) => OpenUsageDashboard());
+        menu.Items.Add(new ToolStripMenuItem(AppText.Format("Menu.Version", Program.AppVersion)) { Enabled = false });
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Quitter", null, (_, _) => Close());
+        menu.Items.Add(AppText.Get("Menu.Quit"), null, (_, _) => Close());
 
         _currentIcon = TrayIcon.CreateUnavailable();
         _icon = new NotifyIcon
         {
             Icon = _currentIcon,
-            Text = "Quota Codex : lecture en cours…",
+            Text = AppText.Get("Tooltip.Loading"),
             ContextMenuStrip = menu,
             Visible = true
         };
@@ -87,12 +91,12 @@ internal sealed class TrayApplicationForm : Form
         if (_refreshing) return;
         if (_codexPath is null)
         {
-            SetError("CLI Codex introuvable. Installe Codex CLI puis actualise.");
+            SetError(AppText.Get("Error.CliNotFound"));
             return;
         }
 
         _refreshing = true;
-        _statusItem.Text = "Lecture du quota Codex…";
+        _statusItem.Text = AppText.Get("Status.ReadingQuota");
         // L'appel CLI peut attendre le serveur; il s'exécute hors du fil UI pour garder le menu réactif.
         _ = Task.Run(async () =>
         {
@@ -118,9 +122,15 @@ internal sealed class TrayApplicationForm : Form
             quota.WeeklyReset,
             DateTimeOffset.Now);
         var notification = _quotaNotifier.GetCrossings(dailyPace.PercentOfDailyAllocation, quota.FiveHourRemaining);
-        var shortText = $"5h {quota.FiveHourRemaining}% · sem. {quota.WeeklyRemaining}%";
-        _statusItem.Text = $"{shortText} · jour {dailyPace.PercentOfDailyAllocation:0}% ({dailyPace.Label})";
-        _icon.Text = ClipTooltip($"Hebdo {quota.WeeklyRemaining}% · 5h {quota.FiveHourRemaining}% | réinit. 5h {quota.FiveHourReset:HH:mm}, sem. {quota.WeeklyReset:dd/MM HH:mm}");
+        var shortText = AppText.Format("Status.Summary", quota.FiveHourRemaining, quota.WeeklyRemaining);
+        _statusItem.Text = AppText.Format("Status.Details", shortText, dailyPace.PercentOfDailyAllocation, dailyPace.Label);
+        var tooltip = AppText.Format(
+            "Tooltip.Quota",
+            quota.WeeklyRemaining,
+            quota.FiveHourRemaining,
+            quota.FiveHourReset.ToString("t", AppText.Culture),
+            quota.WeeklyReset.ToString("g", AppText.Culture));
+        _icon.Text = ClipTooltip(tooltip);
         SetIcon(TrayIcon.Create(quota.WeeklyRemaining, quota.FiveHourRemaining, dailyPace.Color));
         if (notification is not null)
             _icon.ShowBalloonTip(5000, notification.Title, notification.Message, ToolTipIcon.Info);
@@ -130,7 +140,7 @@ internal sealed class TrayApplicationForm : Form
     {
         _refreshing = false;
         _statusItem.Text = message.Length > 70 ? message[..67] + "…" : message;
-        _icon.Text = ClipTooltip("Quota Codex indisponible — clic droit pour aide/connexion");
+        _icon.Text = ClipTooltip(AppText.Get("Tooltip.Unavailable"));
         SetIcon(TrayIcon.CreateUnavailable());
     }
 
@@ -146,18 +156,18 @@ internal sealed class TrayApplicationForm : Form
     {
         if (_codexPath is null)
         {
-            SetError("CLI Codex introuvable. Installe Codex CLI puis actualise.");
+            SetError(AppText.Get("Error.CliNotFound"));
             return;
         }
 
         try
         {
             Process.Start(new ProcessStartInfo(_codexPath, "login") { UseShellExecute = true });
-            _statusItem.Text = "Termine la connexion dans la fenêtre Codex CLI, puis actualise.";
+            _statusItem.Text = AppText.Get("Status.SignInComplete");
         }
         catch (Exception ex)
         {
-            SetError($"Impossible de lancer la connexion : {ex.Message}");
+            SetError(AppText.Format("Error.LoginStart", ex.Message));
         }
     }
 
@@ -208,22 +218,22 @@ internal sealed class QuotaNotifier
         var lines = new List<string>();
         var crossedDaily = DailyThresholds
             .Where(threshold => _previousDailyPace < threshold && dailyPace >= threshold)
-            .Select(threshold => $"{threshold}% de la cible quotidienne");
-        var dailyMessage = string.Join(", ", crossedDaily);
+            .Select(threshold => AppText.Format("Notification.DailyThreshold", threshold));
+        var dailyMessage = string.Join(AppText.Get("List.Separator"), crossedDaily);
         if (dailyMessage.Length > 0)
-            lines.Add($"Rythme hebdomadaire : {dailyMessage}.");
+            lines.Add(AppText.Format("Notification.DailyLine", dailyMessage));
 
         var crossedFiveHour = FiveHourThresholds
             .Where(threshold => _previousFiveHourRemaining >= threshold && fiveHourRemaining < threshold)
-            .Select(threshold => $"sous {threshold}%");
-        var fiveHourMessage = string.Join(" et ", crossedFiveHour);
+            .Select(threshold => AppText.Format("Notification.FiveHourThreshold", threshold));
+        var fiveHourMessage = string.Join(AppText.Get("List.And"), crossedFiveHour);
         if (fiveHourMessage.Length > 0)
-            lines.Add($"Quota 5 h restant : {fiveHourMessage}.");
+            lines.Add(AppText.Format("Notification.FiveHourLine", fiveHourMessage));
 
         Remember(dailyPace, fiveHourRemaining);
         return lines.Count == 0
             ? null
-            : new QuotaNotification("Quota Codex", string.Join(" ", lines));
+            : new QuotaNotification(AppText.Get("Notification.Title"), string.Join(" ", lines));
     }
 
     private void Remember(double dailyPace, int fiveHourRemaining)
@@ -249,7 +259,7 @@ internal static class StartupRegistration
     {
         // La clé Run sous HKCU active le démarrage pour l'utilisateur courant, sans droits administrateur.
         using var key = Registry.CurrentUser.CreateSubKey(RunKey, writable: true)
-            ?? throw new InvalidOperationException("La clé de démarrage Windows n’a pas pu être ouverte.");
+            ?? throw new InvalidOperationException(AppText.Get("Error.StartupKeyUnavailable"));
         if (enabled)
             key.SetValue(ValueName, $"\"{Application.ExecutablePath}\"");
         else
@@ -298,12 +308,23 @@ internal static class CodexCli
         };
         process.StartInfo.Environment["CODEX_NO_UPDATE_CHECK"] = "1";
         process.ErrorDataReceived += (_, _) => { };
-        if (!process.Start()) throw new InvalidOperationException("Impossible de démarrer Codex app-server.");
+        if (!process.Start()) throw new InvalidOperationException(AppText.Get("Error.AppServerStart"));
         process.BeginErrorReadLine();
 
         try
         {
-            await process.StandardInput.WriteLineAsync("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"clientInfo\":{\"name\":\"codex-quota-tray\",\"version\":\"1.0.0\"},\"capabilities\":{\"experimentalApi\":true}}}");
+            var initializeRequest = JsonSerializer.Serialize(new
+            {
+                jsonrpc = "2.0",
+                id = 1,
+                method = "initialize",
+                @params = new
+                {
+                    clientInfo = new { name = "codex-quota-tray", version = Program.AppVersion },
+                    capabilities = new { experimentalApi = true }
+                }
+            });
+            await process.StandardInput.WriteLineAsync(initializeRequest);
             await process.StandardInput.FlushAsync();
             using var initialize = await ReadResponseAsync(process, 1);
             if (initialize.RootElement.TryGetProperty("error", out var initError))
@@ -318,14 +339,14 @@ internal static class CodexCli
             {
                 var message = ReadError(error);
                 if (message.Contains("authentication required", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("CLI Codex non connectée. Clic droit → « Se connecter à Codex CLI… », puis relance l’actualisation.");
+                    throw new InvalidOperationException(AppText.Get("Error.CliNotConnected"));
                 throw new InvalidOperationException(message);
             }
 
             var result = response.RootElement.GetProperty("result");
             var limits = result.GetProperty("rateLimits");
             if (limits.ValueKind == JsonValueKind.Null || !limits.TryGetProperty("primary", out var primary) || primary.ValueKind == JsonValueKind.Null)
-                throw new InvalidOperationException("Codex n’a pas renvoyé de quota principal pour ce compte.");
+                throw new InvalidOperationException(AppText.Get("Error.PrimaryQuotaMissing"));
 
             var weekly = limits.GetProperty("secondary");
             return new Quota(
@@ -350,7 +371,7 @@ internal static class CodexCli
         while (true)
         {
             var line = await process.StandardOutput.ReadLineAsync(timeout.Token);
-            if (line is null) throw new InvalidOperationException("Codex app-server a fermé la connexion.");
+            if (line is null) throw new InvalidOperationException(AppText.Get("Error.AppServerClosed"));
             using var message = JsonDocument.Parse(line);
             if (!message.RootElement.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.Number || id.GetInt32() != expectedId)
                 continue;
@@ -375,7 +396,7 @@ internal static class CodexCli
     }
 
     private static string ReadError(JsonElement error) =>
-        error.TryGetProperty("message", out var message) ? message.GetString() ?? "Erreur Codex." : "Erreur Codex.";
+        error.TryGetProperty("message", out var message) ? message.GetString() ?? AppText.Get("Error.Generic") : AppText.Get("Error.Generic");
 }
 
 internal sealed record Quota(
@@ -393,7 +414,7 @@ internal static class DailyQuotaPace
     public static DailyPaceStatus Calculate(int weeklyUsedPercent, long? windowDurationMinutes, DateTimeOffset weeklyReset, DateTimeOffset now)
     {
         if (windowDurationMinutes is null or <= 0 || weeklyReset == DateTimeOffset.MinValue)
-            return new DailyPaceStatus(0, Color.Gray, "indisponible");
+            return new DailyPaceStatus(0, Color.Gray, AppText.Get("Pace.Unavailable"));
 
         var weekStart = weeklyReset.ToUniversalTime() - TimeSpan.FromMinutes(windowDurationMinutes.Value);
         var elapsedDays = Math.Clamp((now.ToUniversalTime() - weekStart).TotalDays, 0d, 6.999999d);
@@ -404,11 +425,11 @@ internal static class DailyQuotaPace
         var usedBeyondPriorDays = weeklyUsedPercent - completedDays * (100d / 7d);
         var percentOfDailyAllocation = Math.Max(0d, usedBeyondPriorDays * 7d);
 
-        if (percentOfDailyAllocation < 25d) return new(percentOfDailyAllocation, Color.FromArgb(48, 205, 96), "vert");
-        if (percentOfDailyAllocation < 50d) return new(percentOfDailyAllocation, Color.FromArgb(255, 220, 32), "jaune");
-        if (percentOfDailyAllocation < 75d) return new(percentOfDailyAllocation, Color.FromArgb(255, 149, 24), "orange");
-        if (percentOfDailyAllocation <= 100d) return new(percentOfDailyAllocation, Color.FromArgb(242, 63, 63), "rouge");
-        return new(percentOfDailyAllocation, Color.FromArgb(176, 91, 229), "violet");
+        if (percentOfDailyAllocation < 25d) return new(percentOfDailyAllocation, Color.FromArgb(48, 205, 96), AppText.Get("Pace.Green"));
+        if (percentOfDailyAllocation < 50d) return new(percentOfDailyAllocation, Color.FromArgb(255, 220, 32), AppText.Get("Pace.Yellow"));
+        if (percentOfDailyAllocation < 75d) return new(percentOfDailyAllocation, Color.FromArgb(255, 149, 24), AppText.Get("Pace.Orange"));
+        if (percentOfDailyAllocation <= 100d) return new(percentOfDailyAllocation, Color.FromArgb(242, 63, 63), AppText.Get("Pace.Red"));
+        return new(percentOfDailyAllocation, Color.FromArgb(176, 91, 229), AppText.Get("Pace.Purple"));
     }
 
 }

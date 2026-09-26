@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
   <!-- MSI x64 par utilisateur : installation sans élévation et mise à niveau majeure des versions précédentes. -->
   <Package
       Id="CodexQuotaTray.Msi"
       Name="Codex Quota Tray"
       Manufacturer="Codex Quota Tray"
-      Version="1.0.0"
+      Version="1.0.1"
       Language="1036"
       Scope="perUser"
       UpgradeCode="9D97AB88-9D8E-4CB0-AC60-F93E454A8B6A">
-    <MajorUpgrade DowngradeErrorMessage="Une version plus récente de Codex Quota Tray est déjà installée." />
+    <MajorUpgrade Schedule="afterInstallExecute" DowngradeErrorMessage="Une version plus récente de Codex Quota Tray est déjà installée." />
     <MediaTemplate EmbedCab="yes" />
-    <Icon Id="CodexQuotaTray.exe" SourceFile="$(var.PayloadDir)\CodexQuotaTray.exe" />
-    <Property Id="ARPPRODUCTICON" Value="CodexQuotaTray.exe" />
+    <!-- Ferme d'abord l'application normalement; elle n'est arrêtée de force qu'après expiration du délai. -->
+    <util:CloseApplication Id="CloseCodexQuotaTray" Target="CodexQuotaTray.exe" CloseMessage="yes" Timeout="5" TerminateProcess="1" RebootPrompt="no" />
+    <Icon Id="CodexQuotaTrayIcon" SourceFile="assets\CodexQuotaTray.ico" />
+    <Property Id="ARPPRODUCTICON" Value="CodexQuotaTrayIcon" />
 
     <StandardDirectory Id="PerUserProgramFilesFolder">
       <Directory Id="INSTALLFOLDER" Name="CodexQuotaTray" />
@@ -28,12 +31,17 @@
         <!-- La valeur HKCU sert de clé de composant; la seconde valeur lance l'application à l'ouverture de session. -->
         <RegistryValue Root="HKCU" Key="Software\CodexQuotaTray\Components" Name="ApplicationFiles" Type="integer" Value="1" KeyPath="yes" />
         <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="CodexQuotaTray" Type="string" Value="&quot;[#CodexQuotaTrayExe]&quot;" />
-        <Shortcut Id="AppShortcut" Directory="ApplicationProgramsFolder" Name="Codex Quota Tray" Target="[#CodexQuotaTrayExe]" WorkingDirectory="INSTALLFOLDER" Icon="CodexQuotaTray.exe" />
+        <Shortcut Id="AppShortcut" Directory="ApplicationProgramsFolder" Name="Codex Quota Tray" Target="[#CodexQuotaTrayExe]" WorkingDirectory="INSTALLFOLDER" Icon="CodexQuotaTrayIcon" />
         <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
         <!-- Supprime les dossiers parents s'ils sont vides après la désinstallation. -->
         <RemoveFolder Id="RemovePerUserProgramsFolder" Directory="PerUserProgramFilesFolder" On="uninstall" />
         <RemoveFolder Id="RemoveStartMenuFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
       </Component>
     </Feature>
+    <CustomAction Id="LaunchCodexQuotaTray" FileRef="CodexQuotaTrayExe" ExeCommand="" Return="asyncNoWait" />
+    <InstallExecuteSequence>
+      <!-- Une mise à niveau installe un nouveau produit; Installed reste faux pendant cette séquence. -->
+      <Custom Action="LaunchCodexQuotaTray" After="InstallFinalize" Condition="NOT Installed" />
+    </InstallExecuteSequence>
   </Package>
 </Wix>

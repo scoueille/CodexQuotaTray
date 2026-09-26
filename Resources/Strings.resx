@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Menu.StatusStartup" xml:space="preserve"><value>Starting quota reader…</value></data>
+  <data name="Menu.StatusLoading" xml:space="preserve"><value>Reading Codex quota…</value></data>
+  <data name="Menu.Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Menu.StartWithWindows" xml:space="preserve"><value>Start with Windows</value></data>
+  <data name="Menu.SignIn" xml:space="preserve"><value>Sign in to Codex CLI…</value></data>
+  <data name="Menu.OpenDashboard" xml:space="preserve"><value>Open usage dashboard</value></data>
+  <data name="Menu.Version" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="Menu.Quit" xml:space="preserve"><value>Quit</value></data>
+  <data name="Dialog.AutoStartTitle" xml:space="preserve"><value>Codex Quota Tray</value></data>
+  <data name="Dialog.AutoStartError" xml:space="preserve"><value>Could not change the Windows startup setting: {0}</value></data>
+  <data name="Tooltip.Loading" xml:space="preserve"><value>Codex quota: reading…</value></data>
+  <data name="Tooltip.Unavailable" xml:space="preserve"><value>Codex quota unavailable — right-click for help or sign-in</value></data>
+  <data name="Tooltip.Quota" xml:space="preserve"><value>Week {0}% · 5h {1}% | resets: 5h {2}, week {3}</value></data>
+  <data name="Error.CliNotFound" xml:space="preserve"><value>Codex CLI not found. Install Codex CLI, then refresh.</value></data>
+  <data name="Status.ReadingQuota" xml:space="preserve"><value>Reading Codex quota…</value></data>
+  <data name="Status.Summary" xml:space="preserve"><value>5h {0}% · week {1}%</value></data>
+  <data name="Status.Details" xml:space="preserve"><value>{0} · day {1:0}% ({2})</value></data>
+  <data name="Status.SignInComplete" xml:space="preserve"><value>Finish signing in in the Codex CLI window, then refresh.</value></data>
+  <data name="Error.LoginStart" xml:space="preserve"><value>Could not start sign-in: {0}</value></data>
+  <data name="Pace.Unavailable" xml:space="preserve"><value>unavailable</value></data>
+  <data name="Pace.Green" xml:space="preserve"><value>green</value></data>
+  <data name="Pace.Yellow" xml:space="preserve"><value>yellow</value></data>
+  <data name="Pace.Orange" xml:space="preserve"><value>orange</value></data>
+  <data name="Pace.Red" xml:space="preserve"><value>red</value></data>
+  <data name="Pace.Purple" xml:space="preserve"><value>purple</value></data>
+  <data name="Notification.Title" xml:space="preserve"><value>Codex quota</value></data>
+  <data name="Notification.DailyThreshold" xml:space="preserve"><value>{0}% of the daily target</value></data>
+  <data name="Notification.DailyPrefix" xml:space="preserve"><value>Weekly pace</value></data>
+  <data name="Notification.DailyLine" xml:space="preserve"><value>Weekly pace: {0}.</value></data>
+  <data name="Notification.FiveHourThreshold" xml:space="preserve"><value>below {0}%</value></data>
+  <data name="Notification.FiveHourPrefix" xml:space="preserve"><value>5-hour quota remaining</value></data>
+  <data name="Notification.FiveHourLine" xml:space="preserve"><value>5-hour quota remaining: {0}.</value></data>
+  <data name="List.And" xml:space="preserve"><value> and </value></data>
+  <data name="List.Separator" xml:space="preserve"><value>, </value></data>
+  <data name="Error.CliNotConnected" xml:space="preserve"><value>Codex CLI is not signed in. Right-click → “Sign in to Codex CLI…”, then refresh.</value></data>
+  <data name="Error.AppServerStart" xml:space="preserve"><value>Could not start the Codex app server.</value></data>
+  <data name="Error.AppServerClosed" xml:space="preserve"><value>The Codex app server closed the connection.</value></data>
+  <data name="Error.PrimaryQuotaMissing" xml:space="preserve"><value>Codex did not return a primary quota for this account.</value></data>
+  <data name="Error.Generic" xml:space="preserve"><value>Codex error.</value></data>
+  <data name="Error.StartupKeyUnavailable" xml:space="preserve"><value>The Windows startup registry key could not be opened.</value></data>
+</root>
