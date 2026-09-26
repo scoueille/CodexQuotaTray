@@ -61,6 +61,10 @@ dotnet build .\installer\CodexQuotaTrayInstaller.wixproj -c Release
 
 Le MSI est produit dans `installer\bin\x64\Release\CodexQuotaTray.msi`. Les exécutables, MSI et autres sorties de compilation sont exclus du dépôt; ils sont générés localement avec ces commandes.
 
+## Intégration continue
+
+Le workflow GitHub Actions **CI** compile l’application et le MSI sur Windows à chaque push sur `main`, à chaque pull request vers `main` et sur lancement manuel. Le MSI est téléchargeable dans les artefacts de l’exécution sous le nom `CodexQuotaTray-Setup-win-x64`.
+
 WiX Toolset 6 est soumis à l’[Open Source Maintenance Fee](https://docs.firegiant.com/wix/osmf/) si son utilisation génère des revenus; consulte ses conditions si tu distribues le MSI commercialement.
 
 ## Note de compatibilité
@@ -129,6 +133,10 @@ dotnet build .\installer\CodexQuotaTrayInstaller.wixproj -c Release
 ```
 
 The MSI is created at `installer\bin\x64\Release\CodexQuotaTray.msi`. Executables, MSI files, and other build outputs are excluded from the repository and generated locally by these commands.
+
+### Continuous integration
+
+The GitHub Actions **CI** workflow builds the app and MSI on Windows for every push to `main`, every pull request targeting `main`, and manual runs. Download the MSI from the run’s artifacts as `CodexQuotaTray-Setup-win-x64`.
 
 WiX Toolset 6 is subject to the [Open Source Maintenance Fee](https://docs.firegiant.com/wix/osmf/) when its use generates revenue; review its terms if you distribute the MSI commercially.
 

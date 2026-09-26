@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Windows MSI
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish self-contained application
+        run: dotnet publish .\CodexQuotaTray.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o .\installer\app-single
+
+      - name: Build MSI
+        run: dotnet build .\installer\CodexQuotaTrayInstaller.wixproj -c Release
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v7
+        with:
+          name: CodexQuotaTray-Setup-win-x64
+          path: installer/bin/x64/Release/CodexQuotaTray.msi
+          if-no-files-found: error
+          retention-days: 14
