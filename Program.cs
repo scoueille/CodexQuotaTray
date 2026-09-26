@@ -303,7 +303,7 @@ internal static class CodexCli
 
         try
         {
-            await process.StandardInput.WriteLineAsync("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"clientInfo\":{\"name\":\"codex-quota-tray\",\"version\":\"0.1.0\"},\"capabilities\":{\"experimentalApi\":true}}}");
+            await process.StandardInput.WriteLineAsync("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"clientInfo\":{\"name\":\"codex-quota-tray\",\"version\":\"1.0.0\"},\"capabilities\":{\"experimentalApi\":true}}}");
             await process.StandardInput.FlushAsync();
             using var initialize = await ReadResponseAsync(process, 1);
             if (initialize.RootElement.TryGetProperty("error", out var initError))
