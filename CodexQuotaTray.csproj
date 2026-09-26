@@ -16,4 +16,8 @@
     <InformationalVersion>1.0.0</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Les sources WiX sont présentées par leur projet dédié; les artefacts locaux ne polluent pas le projet C#. -->
+    <None Remove="installer\**\*;publish\**\*;CodexQuotaTray-Setup-win-x64.msi;CodexQuotaTray-win-x64.zip;CodexQuotaTray-win-x64\**\*" />
+  </ItemGroup>
 </Project>
