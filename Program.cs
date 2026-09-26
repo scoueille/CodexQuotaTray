@@ -10,13 +10,16 @@ namespace CodexQuotaTray;
 
 internal static class Program
 {
+    /// <summary>Version de l'assembly affichée dans le menu de l'icône et transmise à la CLI.</summary>
     internal static string AppVersion { get; } = typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "unknown";
 
     // Démarre uniquement la fenêtre cachée qui porte l'icône et la boucle d'actualisation.
+    /// <summary>Configure la langue et les préférences, puis lance l'application de zone de notification.</summary>
     [STAThread]
     private static void Main()
     {
         AppText.Initialize();
+        QuotaPreferences.Load();
         ApplicationConfiguration.Initialize();
         Application.Run(new TrayApplicationForm());
     }
@@ -32,6 +35,7 @@ internal sealed class TrayApplicationForm : Form
     private Icon? _currentIcon;
     private bool _refreshing;
 
+    /// <summary>Crée l'icône, son menu et le minuteur qui actualise les quotas.</summary>
     public TrayApplicationForm()
     {
         // La fenêtre reste invisible : l'interface de l'application est le menu de l'icône de notification.
@@ -46,6 +50,7 @@ internal sealed class TrayApplicationForm : Form
         menu.Items.Add(_statusItem);
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(AppText.Get("Menu.Refresh"), null, (_, _) => RefreshQuota());
+        menu.Items.Add(AppText.Get("Menu.Settings"), null, (_, _) => OpenSettings());
         var startupItem = new ToolStripMenuItem(AppText.Get("Menu.StartWithWindows"))
         {
             CheckOnClick = true,
@@ -86,6 +91,7 @@ internal sealed class TrayApplicationForm : Form
         RefreshQuota();
     }
 
+    /// <summary>Lance la lecture des quotas sans bloquer l'interface.</summary>
     private void RefreshQuota()
     {
         if (_refreshing) return;
@@ -112,6 +118,29 @@ internal sealed class TrayApplicationForm : Form
         });
     }
 
+    /// <summary>Affiche les préférences et applique le nombre de jours enregistré.</summary>
+    private void OpenSettings()
+    {
+        using var dialog = new SettingsDialog(QuotaPreferences.WorkDaysPerWeek);
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+
+        try
+        {
+            QuotaPreferences.Save(dialog.WorkDaysPerWeek);
+            _quotaNotifier.ResetBaseline();
+            RefreshQuota();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                AppText.Format("Dialog.SettingsSaveError", ex.Message),
+                AppText.Get("Dialog.SettingsTitle"),
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
+    }
+
+    /// <summary>Met à jour le menu, l'icône et les alertes à partir des quotas reçus.</summary>
     private void SetQuota(Quota quota)
     {
         _refreshing = false;
@@ -120,30 +149,34 @@ internal sealed class TrayApplicationForm : Form
             quota.WeeklyUsedPercent,
             quota.WeeklyWindowDurationMinutes,
             quota.WeeklyReset,
-            DateTimeOffset.Now);
+            DateTimeOffset.Now,
+            QuotaPreferences.WorkDaysPerWeek);
         var notification = _quotaNotifier.GetCrossings(dailyPace.PercentOfDailyAllocation, quota.FiveHourRemaining);
         var shortText = AppText.Format("Status.Summary", quota.FiveHourRemaining, quota.WeeklyRemaining);
         _statusItem.Text = AppText.Format("Status.Details", shortText, dailyPace.PercentOfDailyAllocation, dailyPace.Label);
-        var tooltip = AppText.Format(
-            "Tooltip.Quota",
-            quota.WeeklyRemaining,
-            quota.FiveHourRemaining,
-            quota.FiveHourReset.ToString("t", AppText.Culture),
-            quota.WeeklyReset.ToString("g", AppText.Culture));
-        _icon.Text = ClipTooltip(tooltip);
+        var tooltip = string.Join(
+            Environment.NewLine,
+            AppText.Format("Tooltip.Quota", quota.WeeklyRemaining, quota.FiveHourRemaining),
+            AppText.Format(
+                "Tooltip.Resets",
+                quota.FiveHourReset.ToString("t", AppText.Culture),
+                quota.WeeklyReset.ToString("g", AppText.Culture)));
+        _icon.Text = tooltip;
         SetIcon(TrayIcon.Create(quota.WeeklyRemaining, quota.FiveHourRemaining, dailyPace.Color));
         if (notification is not null)
             _icon.ShowBalloonTip(5000, notification.Title, notification.Message, ToolTipIcon.Info);
     }
 
+    /// <summary>Affiche une erreur d'état et remplace l'icône par son apparence indisponible.</summary>
     private void SetError(string message)
     {
         _refreshing = false;
         _statusItem.Text = message.Length > 70 ? message[..67] + "…" : message;
-        _icon.Text = ClipTooltip(AppText.Get("Tooltip.Unavailable"));
+        _icon.Text = AppText.Get("Tooltip.Unavailable");
         SetIcon(TrayIcon.CreateUnavailable());
     }
 
+    /// <summary>Remplace l'icône de notification et libère l'ancienne ressource graphique.</summary>
     private void SetIcon(Icon icon)
     {
         var previous = _currentIcon;
@@ -152,6 +185,7 @@ internal sealed class TrayApplicationForm : Form
         previous?.Dispose();
     }
 
+    /// <summary>Ouvre la procédure de connexion de la CLI Codex.</summary>
     private void StartLogin()
     {
         if (_codexPath is null)
@@ -171,19 +205,20 @@ internal sealed class TrayApplicationForm : Form
         }
     }
 
+    /// <summary>Ouvre dans le navigateur la page Codex des quotas et de leur utilisation.</summary>
     private static void OpenUsageDashboard()
     {
         Process.Start(new ProcessStartInfo("https://chatgpt.com/codex/settings/usage") { UseShellExecute = true });
     }
 
-    private static string ClipTooltip(string text) => text.Length <= 63 ? text : text[..60] + "…";
-
+    /// <summary>Masque la fenêtre technique dès qu'elle a été affichée.</summary>
     protected override void OnShown(EventArgs e)
     {
         base.OnShown(e);
         Hide();
     }
 
+    /// <summary>Libère le minuteur et les icônes quand l'application se ferme.</summary>
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         // Libère les ressources graphiques et l'icône système quand l'utilisateur quitte l'application.
@@ -196,6 +231,7 @@ internal sealed class TrayApplicationForm : Form
     }
 }
 
+/// <summary>Contient le titre et le texte d'une notification de quota.</summary>
 internal sealed record QuotaNotification(string Title, string Message);
 
 internal sealed class QuotaNotifier
@@ -206,6 +242,7 @@ internal sealed class QuotaNotifier
     private double _previousDailyPace;
     private int _previousFiveHourRemaining;
 
+    /// <summary>Crée une notification si une limite quotidienne ou de cinq heures vient d'être franchie.</summary>
     public QuotaNotification? GetCrossings(double dailyPace, int fiveHourRemaining)
     {
         // La première lecture initialise la référence sans produire d'alerte rétroactive.
@@ -236,6 +273,10 @@ internal sealed class QuotaNotifier
             : new QuotaNotification(AppText.Get("Notification.Title"), string.Join(" ", lines));
     }
 
+    /// <summary>Oublie le relevé précédent afin de redémarrer le suivi sans alerte immédiate.</summary>
+    public void ResetBaseline() => _hasPreviousSample = false;
+
+    /// <summary>Mémorise les valeurs courantes pour détecter les prochains franchissements.</summary>
     private void Remember(double dailyPace, int fiveHourRemaining)
     {
         _previousDailyPace = dailyPace;
@@ -249,12 +290,14 @@ internal static class StartupRegistration
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private const string ValueName = "CodexQuotaTray";
 
+    /// <summary>Indique si le lancement automatique de l'application est activé pour cet utilisateur.</summary>
     public static bool IsEnabled()
     {
         using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: false);
         return key?.GetValue(ValueName) is string value && !string.IsNullOrWhiteSpace(value);
     }
 
+    /// <summary>Active ou désactive le lancement de l'application à l'ouverture de session Windows.</summary>
     public static void SetEnabled(bool enabled)
     {
         // La clé Run sous HKCU active le démarrage pour l'utilisateur courant, sans droits administrateur.
@@ -269,6 +312,7 @@ internal static class StartupRegistration
 
 internal static class CodexCli
 {
+    /// <summary>Recherche l'exécutable Codex dans le chemin configuré, PATH ou son dossier habituel.</summary>
     public static string? FindPath()
     {
         // Priorité au chemin explicitement configuré, puis PATH, puis emplacement habituel de l'installation Codex.
@@ -292,6 +336,7 @@ internal static class CodexCli
         return null;
     }
 
+    /// <summary>Interroge le serveur local de la CLI Codex et renvoie les quotas du compte.</summary>
     public static async Task<Quota> ReadQuotaAsync(string codexPath)
     {
         // Démarre app-server en mode stdio et échange avec lui en JSON-RPC, sans lire de jeton d'authentification.
@@ -364,6 +409,7 @@ internal static class CodexCli
         }
     }
 
+    /// <summary>Attend la réponse JSON-RPC correspondant à l'identifiant demandé.</summary>
     private static async Task<JsonDocument> ReadResponseAsync(Process process, int expectedId)
     {
         // Ignore les notifications non sollicitées et attend la réponse portant l'identifiant JSON-RPC demandé.
@@ -379,15 +425,19 @@ internal static class CodexCli
         }
     }
 
+    /// <summary>Calcule le pourcentage de quota restant dans une fenêtre de limite.</summary>
     private static int Remaining(JsonElement window) => Math.Clamp(100 - window.GetProperty("usedPercent").GetInt32(), 0, 100);
 
+    /// <summary>Lit le pourcentage déjà consommé dans une fenêtre de limite.</summary>
     private static int UsedPercent(JsonElement window) => window.GetProperty("usedPercent").GetInt32();
 
+    /// <summary>Lit la durée de la fenêtre de quota si le serveur l'a fournie.</summary>
     private static long? WindowDurationMinutes(JsonElement window) =>
         window.TryGetProperty("windowDurationMins", out var duration) && duration.ValueKind == JsonValueKind.Number
             ? duration.GetInt64()
             : null;
 
+    /// <summary>Convertit l'heure de réinitialisation Unix en heure locale, ou renvoie une valeur vide.</summary>
     private static DateTimeOffset Reset(JsonElement window)
     {
         if (!window.TryGetProperty("resetsAt", out var reset) || reset.ValueKind != JsonValueKind.Number)
@@ -395,10 +445,12 @@ internal static class CodexCli
         return DateTimeOffset.FromUnixTimeSeconds(reset.GetInt64()).ToLocalTime();
     }
 
+    /// <summary>Extrait le message d'erreur JSON-RPC ou renvoie le texte d'erreur générique.</summary>
     private static string ReadError(JsonElement error) =>
         error.TryGetProperty("message", out var message) ? message.GetString() ?? AppText.Get("Error.Generic") : AppText.Get("Error.Generic");
 }
 
+/// <summary>Regroupe les quotas restants et les heures de réinitialisation renvoyés par Codex.</summary>
 internal sealed record Quota(
     int FiveHourRemaining,
     int WeeklyRemaining,
@@ -407,23 +459,32 @@ internal sealed record Quota(
     DateTimeOffset FiveHourReset,
     DateTimeOffset WeeklyReset);
 
+/// <summary>Décrit le rythme quotidien calculé, sa couleur et son libellé.</summary>
 internal sealed record DailyPaceStatus(double PercentOfDailyAllocation, Color Color, string Label);
 
 internal static class DailyQuotaPace
 {
-    public static DailyPaceStatus Calculate(int weeklyUsedPercent, long? windowDurationMinutes, DateTimeOffset weeklyReset, DateTimeOffset now)
+    /// <summary>Compare l'usage hebdomadaire à l'allocation quotidienne selon le jour courant.</summary>
+    public static DailyPaceStatus Calculate(
+        int weeklyUsedPercent,
+        long? windowDurationMinutes,
+        DateTimeOffset weeklyReset,
+        DateTimeOffset now,
+        int workDaysPerWeek)
     {
         if (windowDurationMinutes is null or <= 0 || weeklyReset == DateTimeOffset.MinValue)
             return new DailyPaceStatus(0, Color.Gray, AppText.Get("Pace.Unavailable"));
 
+        var allocationDays = Math.Clamp(workDaysPerWeek, 1, 7);
         var weekStart = weeklyReset.ToUniversalTime() - TimeSpan.FromMinutes(windowDurationMinutes.Value);
         var elapsedDays = Math.Clamp((now.ToUniversalTime() - weekStart).TotalDays, 0d, 6.999999d);
-        var completedDays = Math.Clamp((int)Math.Floor(elapsedDays), 0, 6);
+        var completedDays = Math.Clamp((int)Math.Floor(elapsedDays), 0, allocationDays - 1);
+        var dailyAllocationPercent = 100d / allocationDays;
 
         // Compare la consommation hebdomadaire à la cible cumulée des jours précédents :
         // un dépassement d'un jour reste visible jusqu'à ce que la cible quotidienne le rattrape.
-        var usedBeyondPriorDays = weeklyUsedPercent - completedDays * (100d / 7d);
-        var percentOfDailyAllocation = Math.Max(0d, usedBeyondPriorDays * 7d);
+        var usedBeyondPriorDays = weeklyUsedPercent - completedDays * dailyAllocationPercent;
+        var percentOfDailyAllocation = Math.Max(0d, usedBeyondPriorDays / dailyAllocationPercent * 100d);
 
         if (percentOfDailyAllocation < 25d) return new(percentOfDailyAllocation, Color.FromArgb(48, 205, 96), AppText.Get("Pace.Green"));
         if (percentOfDailyAllocation < 50d) return new(percentOfDailyAllocation, Color.FromArgb(255, 220, 32), AppText.Get("Pace.Yellow"));
@@ -436,6 +497,7 @@ internal static class DailyQuotaPace
 
 internal static class TrayIcon
 {
+    /// <summary>Crée l'icône avec les quotas restants et la couleur du rythme quotidien.</summary>
     public static Icon Create(int weeklyRemaining, int fiveHourRemaining, Color dailyDotColor)
     {
         var accentColor = ThemeContrastColor.GetWeeklyRingColor();
@@ -444,9 +506,11 @@ internal static class TrayIcon
             DrawQuotaRings(graphics, size, weeklyRemaining, fiveHourRemaining, accentColor, trackColor, dailyDotColor, unavailable: false));
     }
 
+    /// <summary>Crée l'icône indiquant que les quotas ne sont pas disponibles.</summary>
     public static Icon CreateUnavailable() => BuildIcon((graphics, size) =>
         DrawQuotaRings(graphics, size, 0, 0, Color.FromArgb(232, 151, 91), Color.FromArgb(105, 83, 72), Color.Gray, unavailable: true));
 
+    /// <summary>Construit une icône multi-résolution en dessinant chaque image embarquée.</summary>
     private static Icon BuildIcon(Action<Graphics, int> draw)
     {
         // Fournit plusieurs résolutions dans un seul fichier ICO pour que Windows choisisse celle adaptée à l'échelle.
@@ -491,6 +555,7 @@ internal static class TrayIcon
         return new Icon(iconData);
     }
 
+    /// <summary>Dessine les anneaux des quotas de cinq heures et hebdomadaire, ainsi que le point quotidien.</summary>
     private static void DrawQuotaRings(Graphics graphics, int size, int weekly, int fiveHour, Color accentColor, Color trackColor, Color dailyDotColor, bool unavailable)
     {
         // L'anneau externe représente les 5 h; l'anneau interne représente la semaine; le point montre le rythme du jour.
@@ -519,6 +584,7 @@ internal static class TrayIcon
         DrawDailyDot(graphics, size, dailyDotColor);
     }
 
+    /// <summary>Dessine au centre de l'icône le point coloré du rythme quotidien.</summary>
     private static void DrawDailyDot(Graphics graphics, int size, Color color)
     {
         var scale = size / 32f;
@@ -533,6 +599,7 @@ internal static class TrayIcon
         graphics.FillEllipse(fill, core);
     }
 
+    /// <summary>Dessine l'arc correspondant au pourcentage de quota restant.</summary>
     private static void DrawProgressArc(Graphics graphics, RectangleF bounds, float width, int remaining, Color color)
     {
         if (remaining <= 0) return;
@@ -553,6 +620,7 @@ internal static class ThemeContrastColor
 {
     private const string PersonalizeKey = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
 
+    /// <summary>Choisit une couleur d'anneau qui contraste avec la couleur d'accent de Windows.</summary>
     public static Color GetWeeklyRingColor()
     {
         // Utilise la couleur d'accent DWM, tournée sur le cercle chromatique pour contraster avec le fond du thème.
@@ -564,12 +632,14 @@ internal static class ThemeContrastColor
         return FromHsl((accent.GetHue() + 180f) % 360f, 0.88f, (float)lightness);
     }
 
+    /// <summary>Choisit la couleur de fond des anneaux selon le thème Windows.</summary>
     public static Color GetTrackColor()
     {
         if (SystemInformation.HighContrast) return SystemColors.GrayText;
         return IsLightTheme() ? Color.FromArgb(145, 92, 100, 108) : Color.FromArgb(205, 214, 221, 228);
     }
 
+    /// <summary>Lit la couleur d'accent Windows auprès de DWM, si elle est disponible.</summary>
     private static Color? TryGetDwmColorization()
     {
         try
@@ -582,6 +652,7 @@ internal static class ThemeContrastColor
         return null;
     }
 
+    /// <summary>Détermine si Windows utilise un thème clair à partir du registre et des couleurs système.</summary>
     private static bool IsLightTheme()
     {
         try
@@ -594,6 +665,7 @@ internal static class ThemeContrastColor
         return SystemColors.Window.GetBrightness() > 0.5f;
     }
 
+    /// <summary>Convertit une couleur HSL en couleur RGB.</summary>
     private static Color FromHsl(float hue, float saturation, float lightness)
     {
         var chroma = (1f - Math.Abs(2f * lightness - 1f)) * saturation;
@@ -615,6 +687,7 @@ internal static class ThemeContrastColor
             (int)Math.Round((b + m) * 255));
     }
 
+    /// <summary>Récupère la couleur d'accentuation Windows exposée par le gestionnaire de fenêtres.</summary>
     [System.Runtime.InteropServices.DllImport("dwmapi.dll", PreserveSig = true)]
     private static extern int DwmGetColorizationColor(out uint colorizationColor, out bool opaqueBlend);
 }

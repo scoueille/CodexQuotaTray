@@ -7,6 +7,7 @@
   <data name="Menu.StatusStartup" xml:space="preserve"><value>Starting quota reader…</value></data>
   <data name="Menu.StatusLoading" xml:space="preserve"><value>Reading Codex quota…</value></data>
   <data name="Menu.Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Menu.Settings" xml:space="preserve"><value>Settings…</value></data>
   <data name="Menu.StartWithWindows" xml:space="preserve"><value>Start with Windows</value></data>
   <data name="Menu.SignIn" xml:space="preserve"><value>Sign in to Codex CLI…</value></data>
   <data name="Menu.OpenDashboard" xml:space="preserve"><value>Open usage dashboard</value></data>
@@ -14,9 +15,16 @@
   <data name="Menu.Quit" xml:space="preserve"><value>Quit</value></data>
   <data name="Dialog.AutoStartTitle" xml:space="preserve"><value>Codex Quota Tray</value></data>
   <data name="Dialog.AutoStartError" xml:space="preserve"><value>Could not change the Windows startup setting: {0}</value></data>
+  <data name="Dialog.SettingsTitle" xml:space="preserve"><value>Codex Quota Tray settings</value></data>
+  <data name="Settings.WorkDaysPrefix" xml:space="preserve"><value>Spread the weekly quota across</value></data>
+  <data name="Settings.WorkDaysSuffix" xml:space="preserve"><value>workdays</value></data>
+  <data name="Dialog.Save" xml:space="preserve"><value>Save</value></data>
+  <data name="Dialog.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Dialog.SettingsSaveError" xml:space="preserve"><value>Could not save settings: {0}</value></data>
   <data name="Tooltip.Loading" xml:space="preserve"><value>Codex quota: reading…</value></data>
   <data name="Tooltip.Unavailable" xml:space="preserve"><value>Codex quota unavailable — right-click for help or sign-in</value></data>
-  <data name="Tooltip.Quota" xml:space="preserve"><value>Week {0}% · 5h {1}% | resets: 5h {2}, week {3}</value></data>
+  <data name="Tooltip.Quota" xml:space="preserve"><value>Week {0}% · 5h {1}%</value></data>
+  <data name="Tooltip.Resets" xml:space="preserve"><value>Resets: 5h {0}, week {1}</value></data>
   <data name="Error.CliNotFound" xml:space="preserve"><value>Codex CLI not found. Install Codex CLI, then refresh.</value></data>
   <data name="Status.ReadingQuota" xml:space="preserve"><value>Reading Codex quota…</value></data>
   <data name="Status.Summary" xml:space="preserve"><value>5h {0}% · week {1}%</value></data>
@@ -44,4 +52,5 @@
   <data name="Error.PrimaryQuotaMissing" xml:space="preserve"><value>Codex did not return a primary quota for this account.</value></data>
   <data name="Error.Generic" xml:space="preserve"><value>Codex error.</value></data>
   <data name="Error.StartupKeyUnavailable" xml:space="preserve"><value>The Windows startup registry key could not be opened.</value></data>
+  <data name="Error.SettingsKeyUnavailable" xml:space="preserve"><value>The settings registry key could not be opened.</value></data>
 </root>

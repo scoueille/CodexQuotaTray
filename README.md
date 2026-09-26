@@ -14,7 +14,7 @@ L’interface, les infobulles, les notifications et les messages suivent la lang
 - **Anneau intérieur : quota hebdomadaire restant.** Son arc reprend la couleur du point central.
 - **Point au centre de l’anneau intérieur : rythme d’usage quotidien.** Il est séparé de l’anneau par un léger espace et compare la consommation hebdomadaire au rythme attendu.
 
-Codex fournit un quota hebdomadaire, pas un compteur journalier. L’application considère donc que l’allocation quotidienne cible vaut **1/7 du quota hebdomadaire**. Elle compare le quota hebdomadaire utilisé à la cible cumulée des journées déjà écoulées; un excès d’utilisation reste ainsi reporté sur les jours suivants jusqu’à ce que la cible le rattrape.
+Codex fournit un quota hebdomadaire, pas un compteur journalier. Par défaut, l’application répartit donc ce quota en **7 allocations quotidiennes égales**. Dans **Configuration**, accessible par clic droit sur l’icône, le nombre de jours de travail peut être réglé de 1 à 7; la cible quotidienne devient alors le quota hebdomadaire divisé par ce nombre. Le réglage est mémorisé pour l’utilisateur Windows. L’application compare le quota utilisé à la cible cumulée; un excès reste reporté sur les jours suivants jusqu’à ce que la cible le rattrape.
 
 La couleur du point représente la part de l’allocation quotidienne cible consommée : vert sous 25 %, jaune de 25 % à moins de 50 %, orange de 50 % à moins de 75 %, rouge de 75 % à 100 %, et violet au-delà de 100 %.
 
@@ -26,7 +26,7 @@ Windows signale le franchissement des seuils 25 %, 50 %, 75 % et 100 % de l’al
 
 1. Installer le Codex CLI si nécessaire.
 2. Au premier lancement, clic droit sur l’icône puis **Se connecter à Codex CLI…**. Termine la connexion dans la fenêtre qui s’ouvre.
-3. L’icône s’actualise automatiquement toutes les cinq minutes. **Actualiser** lance une lecture immédiate. Double-clic sur l’icône ouvre le tableau de bord d’utilisation. Le menu contextuel affiche la version de l’application, permet de configurer **Lancer avec Windows** et de quitter l’application. Le raccourci créé dans le menu Démarrer utilise une icône dédiée.
+3. L’icône s’actualise automatiquement toutes les cinq minutes. **Actualiser** lance une lecture immédiate. Double-clic sur l’icône ouvre le tableau de bord d’utilisation. Le menu contextuel affiche la version de l’application, permet de modifier **Configuration**, de configurer **Lancer avec Windows** et de quitter l’application. Le raccourci créé dans le menu Démarrer utilise une icône dédiée.
 
 Lors d’une mise à niveau, le programme se ferme pour laisser remplacer son exécutable puis se relance automatiquement. Le setup affiche seulement la progression de l’installation.
 
@@ -83,7 +83,7 @@ The interface, tooltips, notifications, and messages follow the Windows display 
 - **Inner ring: weekly quota remaining.** Its arc uses the same color as the center dot.
 - **Dot at the center of the inner ring: daily usage pace.** A small gap separates it from the ring. Its color compares weekly usage with the expected pace.
 
-Codex provides a weekly quota, not a separate daily counter. The app therefore sets the target daily allocation to **1/7 of the weekly quota**. It compares weekly usage with the cumulative target for the days that have elapsed, so any overuse carries forward to later days until the target catches up.
+Codex provides a weekly quota, not a separate daily counter. By default, the app divides it into **7 equal daily allocations**. In **Settings**, available from the tray icon's right-click menu, the number of workdays can be set from 1 to 7; the daily target then becomes the weekly quota divided by that number. The setting is saved for the current Windows user. The app compares usage with the cumulative target, so any overuse carries forward to later days until the target catches up.
 
 The dot color represents how much of the target daily allocation has been used: green below 25%, yellow from 25% to below 50%, orange from 50% to below 75%, red from 75% through 100%, and purple above 100%.
 
@@ -95,7 +95,7 @@ Windows notifications appear when usage crosses 25%, 50%, 75%, or 100% of the ta
 
 1. Install Codex CLI if needed.
 2. On first launch, right-click the icon and choose **Se connecter à Codex CLI…** (“Sign in to Codex CLI”). Complete sign-in in the window that opens.
-3. The icon refreshes automatically every five minutes. Choose **Actualiser** (“Refresh”) for an immediate reading. Double-click the icon to open the usage dashboard. The context menu displays the app version and lets you configure **Lancer avec Windows** (“Start with Windows”) or **Quitter** (“Quit”). The Start menu shortcut uses a dedicated icon.
+3. The icon refreshes automatically every five minutes. Choose **Actualiser** (“Refresh”) for an immediate reading. Double-click the icon to open the usage dashboard. The context menu displays the app version and lets you edit **Configuration** (“Settings”), configure **Lancer avec Windows** (“Start with Windows”), or choose **Quitter** (“Quit”). The Start menu shortcut uses a dedicated icon.
 
 During an upgrade, the app closes so its executable can be replaced, then starts again automatically. The setup displays installation progress only.
 

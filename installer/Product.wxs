@@ -6,7 +6,7 @@
       Id="CodexQuotaTray.Msi"
       Name="Codex Quota Tray"
       Manufacturer="Codex Quota Tray"
-      Version="1.0.1"
+      Version="1.0.3"
       Language="1036"
       Scope="perUser"
       UpgradeCode="9D97AB88-9D8E-4CB0-AC60-F93E454A8B6A">

@@ -7,6 +7,7 @@
   <data name="Menu.StatusStartup" xml:space="preserve"><value>Lecture du quota…</value></data>
   <data name="Menu.StatusLoading" xml:space="preserve"><value>Lecture du quota Codex…</value></data>
   <data name="Menu.Refresh" xml:space="preserve"><value>Actualiser</value></data>
+  <data name="Menu.Settings" xml:space="preserve"><value>Configuration…</value></data>
   <data name="Menu.StartWithWindows" xml:space="preserve"><value>Lancer avec Windows</value></data>
   <data name="Menu.SignIn" xml:space="preserve"><value>Se connecter à Codex CLI…</value></data>
   <data name="Menu.OpenDashboard" xml:space="preserve"><value>Ouvrir le tableau de bord</value></data>
@@ -14,9 +15,16 @@
   <data name="Menu.Quit" xml:space="preserve"><value>Quitter</value></data>
   <data name="Dialog.AutoStartTitle" xml:space="preserve"><value>Codex Quota Tray</value></data>
   <data name="Dialog.AutoStartError" xml:space="preserve"><value>Impossible de modifier le démarrage automatique : {0}</value></data>
+  <data name="Dialog.SettingsTitle" xml:space="preserve"><value>Configuration de Codex Quota Tray</value></data>
+  <data name="Settings.WorkDaysPrefix" xml:space="preserve"><value>Répartir l’allocation quotidienne sur</value></data>
+  <data name="Settings.WorkDaysSuffix" xml:space="preserve"><value>jours de travail</value></data>
+  <data name="Dialog.Save" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="Dialog.Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Dialog.SettingsSaveError" xml:space="preserve"><value>Impossible d’enregistrer la configuration : {0}</value></data>
   <data name="Tooltip.Loading" xml:space="preserve"><value>Quota Codex : lecture en cours…</value></data>
   <data name="Tooltip.Unavailable" xml:space="preserve"><value>Quota Codex indisponible — clic droit pour aide ou connexion</value></data>
-  <data name="Tooltip.Quota" xml:space="preserve"><value>Hebdo {0} % · 5 h {1} % | réinit. : 5 h {2}, hebdo {3}</value></data>
+  <data name="Tooltip.Quota" xml:space="preserve"><value>Hebdo {0} % · 5 h {1} %</value></data>
+  <data name="Tooltip.Resets" xml:space="preserve"><value>Réinit. : 5 h {0}, hebdo {1}</value></data>
   <data name="Error.CliNotFound" xml:space="preserve"><value>CLI Codex introuvable. Installe Codex CLI puis actualise.</value></data>
   <data name="Status.ReadingQuota" xml:space="preserve"><value>Lecture du quota Codex…</value></data>
   <data name="Status.Summary" xml:space="preserve"><value>5 h {0} % · sem. {1} %</value></data>
@@ -44,4 +52,5 @@
   <data name="Error.PrimaryQuotaMissing" xml:space="preserve"><value>Codex n’a pas renvoyé de quota principal pour ce compte.</value></data>
   <data name="Error.Generic" xml:space="preserve"><value>Erreur Codex.</value></data>
   <data name="Error.StartupKeyUnavailable" xml:space="preserve"><value>Impossible d’ouvrir la clé de démarrage Windows.</value></data>
+  <data name="Error.SettingsKeyUnavailable" xml:space="preserve"><value>Impossible d’ouvrir la clé de configuration.</value></data>
 </root>

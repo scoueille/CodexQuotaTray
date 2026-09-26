@@ -7,6 +7,7 @@
   <data name="Menu.StatusStartup" xml:space="preserve"><value>Kontingent wird gelesen…</value></data>
   <data name="Menu.StatusLoading" xml:space="preserve"><value>Codex-Kontingent wird gelesen…</value></data>
   <data name="Menu.Refresh" xml:space="preserve"><value>Aktualisieren</value></data>
+  <data name="Menu.Settings" xml:space="preserve"><value>Einstellungen…</value></data>
   <data name="Menu.StartWithWindows" xml:space="preserve"><value>Mit Windows starten</value></data>
   <data name="Menu.SignIn" xml:space="preserve"><value>Bei Codex CLI anmelden…</value></data>
   <data name="Menu.OpenDashboard" xml:space="preserve"><value>Nutzungsübersicht öffnen</value></data>
@@ -14,9 +15,16 @@
   <data name="Menu.Quit" xml:space="preserve"><value>Beenden</value></data>
   <data name="Dialog.AutoStartTitle" xml:space="preserve"><value>Codex Quota Tray</value></data>
   <data name="Dialog.AutoStartError" xml:space="preserve"><value>Die Windows-Starteinstellung konnte nicht geändert werden: {0}</value></data>
+  <data name="Dialog.SettingsTitle" xml:space="preserve"><value>Codex Quota Tray – Einstellungen</value></data>
+  <data name="Settings.WorkDaysPrefix" xml:space="preserve"><value>Das Wochenkontingent auf</value></data>
+  <data name="Settings.WorkDaysSuffix" xml:space="preserve"><value>Arbeitstage verteilen</value></data>
+  <data name="Dialog.Save" xml:space="preserve"><value>Speichern</value></data>
+  <data name="Dialog.Cancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="Dialog.SettingsSaveError" xml:space="preserve"><value>Einstellungen konnten nicht gespeichert werden: {0}</value></data>
   <data name="Tooltip.Loading" xml:space="preserve"><value>Codex-Kontingent: wird gelesen…</value></data>
   <data name="Tooltip.Unavailable" xml:space="preserve"><value>Codex-Kontingent nicht verfügbar — Rechtsklick für Hilfe oder Anmeldung</value></data>
-  <data name="Tooltip.Quota" xml:space="preserve"><value>Woche {0} % · 5 Std. {1} % | Rücksetzung: 5 Std. {2}, Woche {3}</value></data>
+  <data name="Tooltip.Quota" xml:space="preserve"><value>Woche {0} % · 5 Std. {1} %</value></data>
+  <data name="Tooltip.Resets" xml:space="preserve"><value>Rücksetzung: 5 Std. {0}, Woche {1}</value></data>
   <data name="Error.CliNotFound" xml:space="preserve"><value>Codex CLI nicht gefunden. Installiere Codex CLI und aktualisiere dann.</value></data>
   <data name="Status.ReadingQuota" xml:space="preserve"><value>Codex-Kontingent wird gelesen…</value></data>
   <data name="Status.Summary" xml:space="preserve"><value>5 Std. {0} % · Woche {1} %</value></data>
@@ -44,4 +52,5 @@
   <data name="Error.PrimaryQuotaMissing" xml:space="preserve"><value>Codex hat für dieses Konto kein primäres Kontingent zurückgegeben.</value></data>
   <data name="Error.Generic" xml:space="preserve"><value>Codex-Fehler.</value></data>
   <data name="Error.StartupKeyUnavailable" xml:space="preserve"><value>Der Windows-Autostart-Registrierungsschlüssel konnte nicht geöffnet werden.</value></data>
+  <data name="Error.SettingsKeyUnavailable" xml:space="preserve"><value>Der Registrierungsschlüssel für die Einstellungen konnte nicht geöffnet werden.</value></data>
 </root>

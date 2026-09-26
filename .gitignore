@@ -14,5 +14,6 @@ CodexQuotaTray-win-x64/
 # IDE and OS files
 .vscode/
 .idea/
+*.csproj.user
 .DS_Store
 Thumbs.db
