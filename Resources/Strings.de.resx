@@ -23,8 +23,9 @@
   <data name="Dialog.SettingsSaveError" xml:space="preserve"><value>Einstellungen konnten nicht gespeichert werden: {0}</value></data>
   <data name="Tooltip.Loading" xml:space="preserve"><value>Codex-Kontingent: wird gelesen…</value></data>
   <data name="Tooltip.Unavailable" xml:space="preserve"><value>Codex-Kontingent nicht verfügbar — Rechtsklick für Hilfe oder Anmeldung</value></data>
-  <data name="Tooltip.Quota" xml:space="preserve"><value>Woche {0} % · 5 Std. {1} %</value></data>
-  <data name="Tooltip.Resets" xml:space="preserve"><value>Rücksetzung: 5 Std. {0}, Woche {1}</value></data>
+  <data name="Tooltip.ResetFormat" xml:space="preserve"><value>dd.MM HH:mm</value></data>
+  <data name="Tooltip.Weekly" xml:space="preserve"><value>Woche {0} % Reset {1}</value></data>
+  <data name="Tooltip.FiveHour" xml:space="preserve"><value>5 Std. {0} % Reset {1}</value></data>
   <data name="Error.CliNotFound" xml:space="preserve"><value>Codex CLI nicht gefunden. Installiere Codex CLI und aktualisiere dann.</value></data>
   <data name="Status.ReadingQuota" xml:space="preserve"><value>Codex-Kontingent wird gelesen…</value></data>
   <data name="Status.Summary" xml:space="preserve"><value>5 Std. {0} % · Woche {1} %</value></data>

@@ -4,15 +4,17 @@
 
 ## Français
 
-Indicateur de quotas Codex dans la zone de notification Windows. L’application lit le quota avec Codex CLI, actualise l’icône toutes les cinq minutes et affiche les heures de réinitialisation dans son infobulle.
+Indicateur de quotas Codex dans la zone de notification Windows. L’application lit le quota avec Codex CLI et actualise l’icône toutes les cinq minutes. L’infobulle affiche chaque quota sur sa propre ligne, suivi de son heure de réinitialisation.
 
 L’interface, les infobulles, les notifications et les messages suivent la langue d’affichage de Windows en français, allemand ou anglais. L’anglais est utilisé pour les autres langues.
 
 ## Lecture de l’icône
 
-- **Anneau extérieur : quota restant sur 5 h.** Sa couleur contraste avec le thème Windows; la piste montre la partie déjà consommée.
+- **Anneau extérieur : quota restant sur 5 h.** Sa couleur contraste avec le thème Windows.
 - **Anneau intérieur : quota hebdomadaire restant.** Son arc reprend la couleur du point central.
 - **Point au centre de l’anneau intérieur : rythme d’usage quotidien.** Il est séparé de l’anneau par un léger espace et compare la consommation hebdomadaire au rythme attendu.
+
+La partie consommée des deux anneaux est transparente et laisse voir le fond de la barre des tâches.
 
 Codex fournit un quota hebdomadaire, pas un compteur journalier. Par défaut, l’application répartit donc ce quota en **7 allocations quotidiennes égales**. Dans **Configuration**, accessible par clic droit sur l’icône, le nombre de jours de travail peut être réglé de 1 à 7; la cible quotidienne devient alors le quota hebdomadaire divisé par ce nombre. Le réglage est mémorisé pour l’utilisateur Windows. L’application compare le quota utilisé à la cible cumulée; un excès reste reporté sur les jours suivants jusqu’à ce que la cible le rattrape.
 
@@ -39,6 +41,8 @@ Le connecteur Codex de cette conversation peut lire le quota avec la session de 
 - Pour ouvrir et compiler le projet MSI depuis Visual Studio, installe l’extension gratuite [HeatWave Community pour Visual Studio](https://docs.firegiant.com/heatwave/). Elle prend en charge Visual Studio 2026 et les projets WiX modernes.
 - Git est nécessaire pour cloner le dépôt. Le SDK WiX 6.0.2 est restauré automatiquement depuis NuGet par MSBuild; aucune installation WiX séparée n’est requise pour les builds en ligne de commande.
 - Codex CLI connecté est requis pour exécuter l’application et lire un quota. Il n’est pas nécessaire pour compiler le code.
+- Le projet de tests MSTest figure dans la solution et ses cas se lancent aussi depuis l’**Explorateur de tests** de Visual Studio. Le Codex CLI n’est pas nécessaire pour les tests : ses réponses sont simulées dans les scénarios.
+- La première compilation et les tests restaurent leurs dépendances depuis NuGet.org; une connexion Internet est nécessaire tant qu’elles ne sont pas en cache.
 
 ## Compilation
 
@@ -49,6 +53,16 @@ dotnet publish .\CodexQuotaTray.csproj -c Release -r win-x64 --self-contained fa
 ```
 
 L’exécutable se trouve sous `bin\Release\net10.0-windows\win-x64\publish\CodexQuotaTray.exe`.
+
+## Tests métier
+
+Les tests vérifient des situations d’usage : report d’une consommation de 2/7 ou 1,5/7 sur les jours suivants, effet du réglage des jours de travail, franchissement des seuils de notification et lecture des réponses de Codex. Depuis la racine du dépôt :
+
+```powershell
+dotnet test .\tests\CodexQuotaTray.Tests\CodexQuotaTray.Tests.csproj -c Release
+```
+
+MSTest et le SDK de test sont des dépendances de développement sous licence MIT; ils ne sont pas inclus dans l’application ni dans le MSI.
 
 ## Création du MSI
 
@@ -61,22 +75,22 @@ dotnet build .\installer\CodexQuotaTrayInstaller.wixproj -c Release
 
 Le MSI est produit dans `installer\bin\x64\Release\CodexQuotaTray.msi`. Les exécutables, MSI et autres sorties de compilation sont exclus du dépôt; ils sont générés localement avec ces commandes.
 
+Le projet MSI utilise WiX Toolset 6. Selon la [documentation de WiX](https://docs.firegiant.com/wix/osmf/), son Open Source Maintenance Fee s’applique aux organisations dont les revenus annuels dépassent 10 000 USD, selon la définition de ces conditions.
+
 ## Intégration continue
 
-Le workflow GitHub Actions **CI** compile l’application et le MSI sur Windows à chaque push sur `main`, à chaque pull request vers `main` et sur lancement manuel. Le MSI est téléchargeable dans les artefacts de l’exécution sous le nom `CodexQuotaTray-Setup-win-x64`.
+Le workflow GitHub Actions **CI** exécute les tests, puis compile l’application et le MSI sur Windows à chaque push sur `main`, à chaque pull request vers `main` et sur lancement manuel. Le MSI est téléchargeable dans les artefacts de l’exécution sous le nom `CodexQuotaTray-Setup-win-x64`.
 
 ## Releases
 
 Pour préparer une version, mettre à jour `Version`, `AssemblyVersion`, `FileVersion` et `InformationalVersion` dans `CodexQuotaTray.csproj`, ainsi que `Version` dans `installer/Product.wxs`. Après avoir poussé le commit et vérifié la CI, créer et pousser un tag correspondant, par exemple :
 
 ```powershell
-git tag -a v1.0.3 -m "Codex Quota Tray v1.0.3"
-git push origin v1.0.3
+git tag -a v1.0.4 -m "Codex Quota Tray v1.0.4"
+git push origin v1.0.4
 ```
 
-Le workflow **Release** vérifie que le tag et les versions correspondent, construit le MSI depuis ce tag et crée une Release **en brouillon** avec des notes générées et `CodexQuotaTray-Setup-win-x64.msi`. Vérifier le brouillon et l’installateur dans l’onglet **Releases**, puis publier la Release manuellement.
-
-WiX Toolset 6 est soumis à l’[Open Source Maintenance Fee](https://docs.firegiant.com/wix/osmf/) si son utilisation génère des revenus; consulte ses conditions si tu distribues le MSI commercialement.
+Le workflow **Release** vérifie que le tag et les versions correspondent, exécute les tests, construit le MSI depuis ce tag et crée une Release **en brouillon** avec des notes générées et `CodexQuotaTray-Setup-win-x64.msi`. Vérifier le brouillon et l’installateur dans l’onglet **Releases**, puis publier la Release manuellement.
 
 ## Note de compatibilité
 
@@ -88,15 +102,17 @@ Le code source de ce dépôt est distribué sous licence MIT; voir [LICENSE](LIC
 
 ## English
 
-Codex quota indicator in the Windows notification area. The app reads quota data through Codex CLI, refreshes the icon every five minutes, and shows reset times in its tooltip.
+Codex quota indicator in the Windows notification area. The app reads quota data through Codex CLI and refreshes the icon every five minutes. The tooltip shows each quota on its own line, followed by its reset time.
 
 The interface, tooltips, notifications, and messages follow the Windows display language when it is French, German, or English. English is used for all other languages.
 
 ### Reading the icon
 
-- **Outer ring: quota remaining in the 5-hour window.** Its color contrasts with the Windows theme; the track shows the consumed portion.
+- **Outer ring: quota remaining in the 5-hour window.** Its color contrasts with the Windows theme.
 - **Inner ring: weekly quota remaining.** Its arc uses the same color as the center dot.
 - **Dot at the center of the inner ring: daily usage pace.** A small gap separates it from the ring. Its color compares weekly usage with the expected pace.
+
+The consumed part of each ring is transparent, allowing the taskbar background to show through.
 
 Codex provides a weekly quota, not a separate daily counter. By default, the app divides it into **7 equal daily allocations**. In **Settings**, available from the tray icon's right-click menu, the number of workdays can be set from 1 to 7; the daily target then becomes the weekly quota divided by that number. The setting is saved for the current Windows user. The app compares usage with the cumulative target, so any overuse carries forward to later days until the target catches up.
 
@@ -123,6 +139,8 @@ The Codex connector in this conversation can read quota using the app session. T
 - To open and build the MSI project in Visual Studio, install the free [HeatWave Community extension for Visual Studio](https://docs.firegiant.com/heatwave/). It supports Visual Studio 2026 and modern WiX projects.
 - Git is needed to clone the repository. MSBuild restores WiX SDK 6.0.2 from NuGet automatically; no separate WiX installation is required for command-line builds.
 - A signed-in Codex CLI is required to run the app and read quota. It is not required to compile the code.
+- The MSTest project is included in the solution and can also be run from Visual Studio **Test Explorer**. The tests do not require Codex CLI: scenarios use simulated Codex responses.
+- The first build and test run restore dependencies from NuGet.org; an Internet connection is needed until they are cached.
 
 ### Build
 
@@ -133,6 +151,16 @@ dotnet publish .\CodexQuotaTray.csproj -c Release -r win-x64 --self-contained fa
 ```
 
 The executable is written to `bin\Release\net10.0-windows\win-x64\publish\CodexQuotaTray.exe`.
+
+### Business scenario tests
+
+The tests cover user scenarios: carrying 2/7 or 1.5/7 of weekly usage into later days, changing the workday setting, crossing notification thresholds, and reading Codex responses. From the repository root:
+
+```powershell
+dotnet test .\tests\CodexQuotaTray.Tests\CodexQuotaTray.Tests.csproj -c Release
+```
+
+MSTest and the test SDK are MIT-licensed development dependencies; they are not included in the app or MSI.
 
 ### Build the MSI
 
@@ -145,22 +173,22 @@ dotnet build .\installer\CodexQuotaTrayInstaller.wixproj -c Release
 
 The MSI is created at `installer\bin\x64\Release\CodexQuotaTray.msi`. Executables, MSI files, and other build outputs are excluded from the repository and generated locally by these commands.
 
+The MSI project uses WiX Toolset 6. According to the [WiX documentation](https://docs.firegiant.com/wix/osmf/), its Open Source Maintenance Fee applies to organizations with more than USD 10,000 in annual revenue, as defined by those terms.
+
 ### Continuous integration
 
-The GitHub Actions **CI** workflow builds the app and MSI on Windows for every push to `main`, every pull request targeting `main`, and manual runs. Download the MSI from the run’s artifacts as `CodexQuotaTray-Setup-win-x64`.
+The GitHub Actions **CI** workflow runs the tests, then builds the app and MSI on Windows for every push to `main`, every pull request targeting `main`, and manual runs. Download the MSI from the run’s artifacts as `CodexQuotaTray-Setup-win-x64`.
 
 ### Releases
 
 To prepare a version, update `Version`, `AssemblyVersion`, `FileVersion`, and `InformationalVersion` in `CodexQuotaTray.csproj`, plus `Version` in `installer/Product.wxs`. Push the commit and check CI, then create and push the matching tag, for example:
 
 ```powershell
-git tag -a v1.0.3 -m "Codex Quota Tray v1.0.3"
-git push origin v1.0.3
+git tag -a v1.0.4 -m "Codex Quota Tray v1.0.4"
+git push origin v1.0.4
 ```
 
-The **Release** workflow checks the tag against the project versions, builds the MSI from that tag, and creates a **draft** Release with generated notes and `CodexQuotaTray-Setup-win-x64.msi`. Review the draft and installer in **Releases**, then publish the Release manually.
-
-WiX Toolset 6 is subject to the [Open Source Maintenance Fee](https://docs.firegiant.com/wix/osmf/) when its use generates revenue; review its terms if you distribute the MSI commercially.
+The **Release** workflow checks the tag against the project versions, runs the tests, builds the MSI from that tag, and creates a **draft** Release with generated notes and `CodexQuotaTray-Setup-win-x64.msi`. Review the draft and installer in **Releases**, then publish the Release manually.
 
 ### Compatibility
 

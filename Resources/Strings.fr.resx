@@ -23,8 +23,9 @@
   <data name="Dialog.SettingsSaveError" xml:space="preserve"><value>Impossible d’enregistrer la configuration : {0}</value></data>
   <data name="Tooltip.Loading" xml:space="preserve"><value>Quota Codex : lecture en cours…</value></data>
   <data name="Tooltip.Unavailable" xml:space="preserve"><value>Quota Codex indisponible — clic droit pour aide ou connexion</value></data>
-  <data name="Tooltip.Quota" xml:space="preserve"><value>Hebdo {0} % · 5 h {1} %</value></data>
-  <data name="Tooltip.Resets" xml:space="preserve"><value>Réinit. : 5 h {0}, hebdo {1}</value></data>
+  <data name="Tooltip.ResetFormat" xml:space="preserve"><value>dd/MM HH:mm</value></data>
+  <data name="Tooltip.Weekly" xml:space="preserve"><value>Hebdo {0}% réinit. {1}</value></data>
+  <data name="Tooltip.FiveHour" xml:space="preserve"><value>5 h {0}% réinit. {1}</value></data>
   <data name="Error.CliNotFound" xml:space="preserve"><value>CLI Codex introuvable. Installe Codex CLI puis actualise.</value></data>
   <data name="Status.ReadingQuota" xml:space="preserve"><value>Lecture du quota Codex…</value></data>
   <data name="Status.Summary" xml:space="preserve"><value>5 h {0} % · sem. {1} %</value></data>

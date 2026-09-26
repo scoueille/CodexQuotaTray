@@ -23,8 +23,9 @@
   <data name="Dialog.SettingsSaveError" xml:space="preserve"><value>Could not save settings: {0}</value></data>
   <data name="Tooltip.Loading" xml:space="preserve"><value>Codex quota: reading…</value></data>
   <data name="Tooltip.Unavailable" xml:space="preserve"><value>Codex quota unavailable — right-click for help or sign-in</value></data>
-  <data name="Tooltip.Quota" xml:space="preserve"><value>Week {0}% · 5h {1}%</value></data>
-  <data name="Tooltip.Resets" xml:space="preserve"><value>Resets: 5h {0}, week {1}</value></data>
+  <data name="Tooltip.ResetFormat" xml:space="preserve"><value>MM/dd HH:mm</value></data>
+  <data name="Tooltip.Weekly" xml:space="preserve"><value>Week {0}% resets {1}</value></data>
+  <data name="Tooltip.FiveHour" xml:space="preserve"><value>5h {0}% resets {1}</value></data>
   <data name="Error.CliNotFound" xml:space="preserve"><value>Codex CLI not found. Install Codex CLI, then refresh.</value></data>
   <data name="Status.ReadingQuota" xml:space="preserve"><value>Reading Codex quota…</value></data>
   <data name="Status.Summary" xml:space="preserve"><value>5h {0}% · week {1}%</value></data>

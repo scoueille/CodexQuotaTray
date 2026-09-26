@@ -10,14 +10,17 @@
     <RootNamespace>CodexQuotaTray</RootNamespace>
     <Title>Codex Quota Tray</Title>
     <Product>Codex Quota Tray</Product>
-    <Version>1.0.3</Version>
-    <AssemblyVersion>1.0.3.0</AssemblyVersion>
-    <FileVersion>1.0.3.0</FileVersion>
-    <InformationalVersion>1.0.3</InformationalVersion>
+    <Version>1.0.4</Version>
+    <AssemblyVersion>1.0.4.0</AssemblyVersion>
+    <FileVersion>1.0.4.0</FileVersion>
+    <InformationalVersion>1.0.4</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
   <ItemGroup>
     <!-- Les sources WiX sont présentées par leur projet dédié; les artefacts locaux ne polluent pas le projet C#. -->
     <None Remove="installer\**\*;publish\**\*;CodexQuotaTray-Setup-win-x64.msi;CodexQuotaTray-win-x64.zip;CodexQuotaTray-win-x64\**\*" />
+    <!-- Le projet de test a son propre assemblage et ne doit pas être compilé dans l'application. -->
+    <Compile Remove="tests\**\*.cs" />
+    <None Remove="tests\**\*" />
   </ItemGroup>
 </Project>

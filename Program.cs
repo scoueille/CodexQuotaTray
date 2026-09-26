@@ -154,13 +154,11 @@ internal sealed class TrayApplicationForm : Form
         var notification = _quotaNotifier.GetCrossings(dailyPace.PercentOfDailyAllocation, quota.FiveHourRemaining);
         var shortText = AppText.Format("Status.Summary", quota.FiveHourRemaining, quota.WeeklyRemaining);
         _statusItem.Text = AppText.Format("Status.Details", shortText, dailyPace.PercentOfDailyAllocation, dailyPace.Label);
+        var resetFormat = AppText.Get("Tooltip.ResetFormat");
         var tooltip = string.Join(
             Environment.NewLine,
-            AppText.Format("Tooltip.Quota", quota.WeeklyRemaining, quota.FiveHourRemaining),
-            AppText.Format(
-                "Tooltip.Resets",
-                quota.FiveHourReset.ToString("t", AppText.Culture),
-                quota.WeeklyReset.ToString("g", AppText.Culture)));
+            AppText.Format("Tooltip.Weekly", quota.WeeklyRemaining, quota.WeeklyReset.ToString(resetFormat, AppText.Culture)),
+            AppText.Format("Tooltip.FiveHour", quota.FiveHourRemaining, quota.FiveHourReset.ToString(resetFormat, AppText.Culture)));
         _icon.Text = tooltip;
         SetIcon(TrayIcon.Create(quota.WeeklyRemaining, quota.FiveHourRemaining, dailyPace.Color));
         if (notification is not null)
@@ -380,33 +378,39 @@ internal static class CodexCli
             await process.StandardInput.FlushAsync();
 
             using var response = await ReadResponseAsync(process, 2);
-            if (response.RootElement.TryGetProperty("error", out var error))
-            {
-                var message = ReadError(error);
-                if (message.Contains("authentication required", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException(AppText.Get("Error.CliNotConnected"));
-                throw new InvalidOperationException(message);
-            }
-
-            var result = response.RootElement.GetProperty("result");
-            var limits = result.GetProperty("rateLimits");
-            if (limits.ValueKind == JsonValueKind.Null || !limits.TryGetProperty("primary", out var primary) || primary.ValueKind == JsonValueKind.Null)
-                throw new InvalidOperationException(AppText.Get("Error.PrimaryQuotaMissing"));
-
-            var weekly = limits.GetProperty("secondary");
-            return new Quota(
-                Remaining(primary),
-                Remaining(weekly),
-                UsedPercent(weekly),
-                WindowDurationMinutes(weekly),
-                Reset(primary),
-                Reset(weekly));
+            return ParseQuota(response.RootElement);
         }
         finally
         {
             try { process.StandardInput.Close(); } catch { }
             if (!process.HasExited) process.Kill(true);
         }
+    }
+
+    /// <summary>Convertit une réponse JSON-RPC de quotas en valeurs utilisables par l'interface.</summary>
+    internal static Quota ParseQuota(JsonElement response)
+    {
+        if (response.TryGetProperty("error", out var error))
+        {
+            var message = ReadError(error);
+            if (message.Contains("authentication required", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException(AppText.Get("Error.CliNotConnected"));
+            throw new InvalidOperationException(message);
+        }
+
+        var result = response.GetProperty("result");
+        var limits = result.GetProperty("rateLimits");
+        if (limits.ValueKind == JsonValueKind.Null || !limits.TryGetProperty("primary", out var primary) || primary.ValueKind == JsonValueKind.Null)
+            throw new InvalidOperationException(AppText.Get("Error.PrimaryQuotaMissing"));
+
+        var weekly = limits.GetProperty("secondary");
+        return new Quota(
+            Remaining(primary),
+            Remaining(weekly),
+            UsedPercent(weekly),
+            WindowDurationMinutes(weekly),
+            Reset(primary),
+            Reset(weekly));
     }
 
     /// <summary>Attend la réponse JSON-RPC correspondant à l'identifiant demandé.</summary>
@@ -501,14 +505,13 @@ internal static class TrayIcon
     public static Icon Create(int weeklyRemaining, int fiveHourRemaining, Color dailyDotColor)
     {
         var accentColor = ThemeContrastColor.GetWeeklyRingColor();
-        var trackColor = ThemeContrastColor.GetTrackColor();
         return BuildIcon((graphics, size) =>
-            DrawQuotaRings(graphics, size, weeklyRemaining, fiveHourRemaining, accentColor, trackColor, dailyDotColor, unavailable: false));
+            DrawQuotaRings(graphics, size, weeklyRemaining, fiveHourRemaining, accentColor, dailyDotColor, unavailable: false));
     }
 
     /// <summary>Crée l'icône indiquant que les quotas ne sont pas disponibles.</summary>
     public static Icon CreateUnavailable() => BuildIcon((graphics, size) =>
-        DrawQuotaRings(graphics, size, 0, 0, Color.FromArgb(232, 151, 91), Color.FromArgb(105, 83, 72), Color.Gray, unavailable: true));
+        DrawQuotaRings(graphics, size, 0, 0, Color.FromArgb(232, 151, 91), Color.Gray, unavailable: true));
 
     /// <summary>Construit une icône multi-résolution en dessinant chaque image embarquée.</summary>
     private static Icon BuildIcon(Action<Graphics, int> draw)
@@ -555,20 +558,16 @@ internal static class TrayIcon
         return new Icon(iconData);
     }
 
-    /// <summary>Dessine les anneaux des quotas de cinq heures et hebdomadaire, ainsi que le point quotidien.</summary>
-    private static void DrawQuotaRings(Graphics graphics, int size, int weekly, int fiveHour, Color accentColor, Color trackColor, Color dailyDotColor, bool unavailable)
+    /// <summary>Dessine les arcs des quotas restants et le point quotidien sur un fond transparent.</summary>
+    private static void DrawQuotaRings(Graphics graphics, int size, int weekly, int fiveHour, Color accentColor, Color dailyDotColor, bool unavailable)
     {
-        // L'anneau externe représente les 5 h; l'anneau interne représente la semaine; le point montre le rythme du jour.
+        // L'anneau externe représente les 5 h; l'anneau interne représente la semaine; la partie consommée n'est pas dessinée.
         var scale = size / 32f;
         graphics.SmoothingMode = SmoothingMode.AntiAlias;
         graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
         var outer = new RectangleF(3f * scale, 3f * scale, 26f * scale, 26f * scale);
         var inner = new RectangleF(7.8f * scale, 7.8f * scale, 16.4f * scale, 16.4f * scale);
-        using var fiveHourTrack = new Pen(trackColor, 4.8f * scale);
-        using var weeklyTrackInner = new Pen(trackColor, 3.2f * scale);
-        graphics.DrawEllipse(fiveHourTrack, outer);
-        graphics.DrawEllipse(weeklyTrackInner, inner);
 
         if (unavailable)
         {
@@ -630,13 +629,6 @@ internal static class ThemeContrastColor
         var isLightTheme = IsLightTheme();
         var lightness = isLightTheme ? 0.42 : 0.68;
         return FromHsl((accent.GetHue() + 180f) % 360f, 0.88f, (float)lightness);
-    }
-
-    /// <summary>Choisit la couleur de fond des anneaux selon le thème Windows.</summary>
-    public static Color GetTrackColor()
-    {
-        if (SystemInformation.HighContrast) return SystemColors.GrayText;
-        return IsLightTheme() ? Color.FromArgb(145, 92, 100, 108) : Color.FromArgb(205, 214, 221, 228);
     }
 
     /// <summary>Lit la couleur d'accent Windows auprès de DWM, si elle est disponible.</summary>

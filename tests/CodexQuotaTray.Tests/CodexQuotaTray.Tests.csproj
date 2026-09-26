@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>CodexQuotaTray.Tests</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Dépendances MIT utilisées uniquement pendant le développement et la CI. -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" PrivateAssets="all" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.2.3" PrivateAssets="all" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.2.3" PrivateAssets="all" />
+    <ProjectReference Include="..\..\CodexQuotaTray.csproj" />
+  </ItemGroup>
+</Project>
