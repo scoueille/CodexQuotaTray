@@ -1,5 +1,9 @@
 # Codex Quota Tray
 
+[Français](#français) · [English](#english)
+
+## Français
+
 Indicateur de quotas Codex dans la zone de notification Windows. L’application lit le quota avec Codex CLI, actualise l’icône toutes les cinq minutes et affiche les heures de réinitialisation dans son infobulle.
 
 ## Lecture de l’icône
@@ -62,3 +66,68 @@ La lecture utilise le protocole `account/rateLimits/read` de `codex app-server`.
 ## Licence
 
 Le code source de ce dépôt est distribué sous licence MIT; voir [LICENSE](LICENSE). Le MSI autonome généré embarque le runtime .NET pour Windows, qui est soumis à ses propres conditions Microsoft ([informations de licence .NET](https://github.com/dotnet/core/blob/main/license-information.md)). Le MSI n’est pas inclus dans le dépôt.
+
+## English
+
+Codex quota indicator in the Windows notification area. The app reads quota data through Codex CLI, refreshes the icon every five minutes, and shows reset times in its tooltip.
+
+### Reading the icon
+
+- **Outer ring: quota remaining in the 5-hour window.** Its color contrasts with the Windows theme; the track shows the consumed portion.
+- **Inner ring: weekly quota remaining.** Its arc uses the same color as the center dot.
+- **Dot at the center of the inner ring: daily usage pace.** A small gap separates it from the ring. Its color compares weekly usage with the expected pace.
+
+Codex provides a weekly quota, not a separate daily counter. The app therefore sets the target daily allocation to **1/7 of the weekly quota**. It compares weekly usage with the cumulative target for the days that have elapsed, so any overuse carries forward to later days until the target catches up.
+
+The dot color represents how much of the target daily allocation has been used: green below 25%, yellow from 25% to below 50%, orange from 50% to below 75%, red from 75% through 100%, and purple above 100%.
+
+### Notifications
+
+Windows notifications appear when usage crosses 25%, 50%, 75%, or 100% of the target daily allocation, and when the remaining 5-hour quota drops below 50% or 25%. The first reading after launch establishes a baseline and does not trigger a notification.
+
+### Usage
+
+1. Install Codex CLI if needed.
+2. On first launch, right-click the icon and choose **Se connecter à Codex CLI…** (“Sign in to Codex CLI”). Complete sign-in in the window that opens.
+3. The icon refreshes automatically every five minutes. Choose **Actualiser** (“Refresh”) for an immediate reading. Double-click the icon to open the usage dashboard. The context menu also lets you configure **Lancer avec Windows** (“Start with Windows”) or **Quitter** (“Quit”).
+
+The Codex connector in this conversation can read quota using the app session. The standalone app instead calls `codex app-server` and relies on the authentication available to the CLI in its own environment. It does not read or copy authentication tokens. If the menu says the CLI is not signed in, choose **Se connecter à Codex CLI…**. An authentication state observed in an isolated environment does not establish whether the CLI running directly on Windows is signed in.
+
+### Developer prerequisites
+
+- Windows 10 or 11, x64.
+- The .NET 10 SDK. For Visual Studio, use **Visual Studio 2026 (18.0 or later)** with the **.NET desktop development** workload. Visual Studio 2022 does not support targeting .NET 10 in the IDE. For command-line builds only, install the [.NET 10 SDK](https://learn.microsoft.com/dotnet/core/install/windows).
+- To open and build the MSI project in Visual Studio, install the free [HeatWave Community extension for Visual Studio](https://docs.firegiant.com/heatwave/). It supports Visual Studio 2026 and modern WiX projects.
+- Git is needed to clone the repository. MSBuild restores WiX SDK 6.0.2 from NuGet automatically; no separate WiX installation is required for command-line builds.
+- A signed-in Codex CLI is required to run the app and read quota. It is not required to compile the code.
+
+### Build
+
+With the .NET 10 SDK installed on Windows:
+
+```powershell
+dotnet publish .\CodexQuotaTray.csproj -c Release -r win-x64 --self-contained false
+```
+
+The executable is written to `bin\Release\net10.0-windows\win-x64\publish\CodexQuotaTray.exe`.
+
+### Build the MSI
+
+The MSI is built with the .NET 10 SDK and WiX Toolset 6. From the repository root, publish the self-contained app first, then build the WiX project:
+
+```powershell
+dotnet publish .\CodexQuotaTray.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o .\installer\app-single
+dotnet build .\installer\CodexQuotaTrayInstaller.wixproj -c Release
+```
+
+The MSI is created at `installer\bin\x64\Release\CodexQuotaTray.msi`. Executables, MSI files, and other build outputs are excluded from the repository and generated locally by these commands.
+
+WiX Toolset 6 is subject to the [Open Source Maintenance Fee](https://docs.firegiant.com/wix/osmf/) when its use generates revenue; review its terms if you distribute the MSI commercially.
+
+### Compatibility
+
+Quota reading uses the `account/rateLimits/read` protocol from `codex app-server`. The Codex app server is currently experimental, so a CLI update may require changes.
+
+### License
+
+The source code in this repository is distributed under the MIT License; see [LICENSE](LICENSE). The generated self-contained MSI bundles the .NET runtime for Windows, which is subject to separate Microsoft terms ([.NET licensing information](https://github.com/dotnet/core/blob/main/license-information.md)). The MSI is not included in the repository.
