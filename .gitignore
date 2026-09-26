@@ -1,0 +1,18 @@
+# Build products
+**/bin/
+**/obj/
+**/publish/
+.vs/
+
+# Locally published app and installer payload
+installer/app-single/
+CodexQuotaTray-win-x64/
+*.msi
+*.wixpdb
+*.zip
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

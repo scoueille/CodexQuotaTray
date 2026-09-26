@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <!-- MSI x64 par utilisateur : installation sans élévation et mise à niveau majeure des versions précédentes. -->
+  <Package
+      Id="CodexQuotaTray.Msi"
+      Name="Codex Quota Tray"
+      Manufacturer="Codex Quota Tray"
+      Version="1.0.0"
+      Language="1036"
+      Scope="perUser"
+      UpgradeCode="9D97AB88-9D8E-4CB0-AC60-F93E454A8B6A">
+    <MajorUpgrade DowngradeErrorMessage="Une version plus récente de Codex Quota Tray est déjà installée." />
+    <MediaTemplate EmbedCab="yes" />
+    <Icon Id="CodexQuotaTray.exe" SourceFile="$(var.PayloadDir)\CodexQuotaTray.exe" />
+    <Property Id="ARPPRODUCTICON" Value="CodexQuotaTray.exe" />
+
+    <StandardDirectory Id="PerUserProgramFilesFolder">
+      <Directory Id="INSTALLFOLDER" Name="CodexQuotaTray" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Codex Quota Tray" />
+    </StandardDirectory>
+
+    <Feature Id="MainFeature" Title="Codex Quota Tray" Level="1">
+      <Component Id="ApplicationFiles" Directory="INSTALLFOLDER" Guid="6C13D8D1-0B7B-45B6-A20F-8C2A4AFB956C">
+        <File Id="CodexQuotaTrayExe" Source="$(var.PayloadDir)\CodexQuotaTray.exe" />
+        <!-- La valeur HKCU sert de clé de composant; la seconde valeur lance l'application à l'ouverture de session. -->
+        <RegistryValue Root="HKCU" Key="Software\CodexQuotaTray\Components" Name="ApplicationFiles" Type="integer" Value="1" KeyPath="yes" />
+        <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="CodexQuotaTray" Type="string" Value="&quot;[#CodexQuotaTrayExe]&quot;" />
+        <Shortcut Id="AppShortcut" Directory="ApplicationProgramsFolder" Name="Codex Quota Tray" Target="[#CodexQuotaTrayExe]" WorkingDirectory="INSTALLFOLDER" Icon="CodexQuotaTray.exe" />
+        <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
+        <!-- Supprime les dossiers parents s'ils sont vides après la désinstallation. -->
+        <RemoveFolder Id="RemovePerUserProgramsFolder" Directory="PerUserProgramFilesFolder" On="uninstall" />
+        <RemoveFolder Id="RemoveStartMenuFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
+      </Component>
+    </Feature>
+  </Package>
+</Wix>
