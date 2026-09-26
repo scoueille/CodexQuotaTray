@@ -65,6 +65,17 @@ Le MSI est produit dans `installer\bin\x64\Release\CodexQuotaTray.msi`. Les exé
 
 Le workflow GitHub Actions **CI** compile l’application et le MSI sur Windows à chaque push sur `main`, à chaque pull request vers `main` et sur lancement manuel. Le MSI est téléchargeable dans les artefacts de l’exécution sous le nom `CodexQuotaTray-Setup-win-x64`.
 
+## Releases
+
+Pour préparer une version, mettre à jour `Version`, `AssemblyVersion`, `FileVersion` et `InformationalVersion` dans `CodexQuotaTray.csproj`, ainsi que `Version` dans `installer/Product.wxs`. Après avoir poussé le commit et vérifié la CI, créer et pousser un tag correspondant, par exemple :
+
+```powershell
+git tag -a v1.0.3 -m "Codex Quota Tray v1.0.3"
+git push origin v1.0.3
+```
+
+Le workflow **Release** vérifie que le tag et les versions correspondent, construit le MSI depuis ce tag et crée une Release **en brouillon** avec des notes générées et `CodexQuotaTray-Setup-win-x64.msi`. Vérifier le brouillon et l’installateur dans l’onglet **Releases**, puis publier la Release manuellement.
+
 WiX Toolset 6 est soumis à l’[Open Source Maintenance Fee](https://docs.firegiant.com/wix/osmf/) si son utilisation génère des revenus; consulte ses conditions si tu distribues le MSI commercialement.
 
 ## Note de compatibilité
@@ -137,6 +148,17 @@ The MSI is created at `installer\bin\x64\Release\CodexQuotaTray.msi`. Executable
 ### Continuous integration
 
 The GitHub Actions **CI** workflow builds the app and MSI on Windows for every push to `main`, every pull request targeting `main`, and manual runs. Download the MSI from the run’s artifacts as `CodexQuotaTray-Setup-win-x64`.
+
+### Releases
+
+To prepare a version, update `Version`, `AssemblyVersion`, `FileVersion`, and `InformationalVersion` in `CodexQuotaTray.csproj`, plus `Version` in `installer/Product.wxs`. Push the commit and check CI, then create and push the matching tag, for example:
+
+```powershell
+git tag -a v1.0.3 -m "Codex Quota Tray v1.0.3"
+git push origin v1.0.3
+```
+
+The **Release** workflow checks the tag against the project versions, builds the MSI from that tag, and creates a **draft** Release with generated notes and `CodexQuotaTray-Setup-win-x64.msi`. Review the draft and installer in **Releases**, then publish the Release manually.
 
 WiX Toolset 6 is subject to the [Open Source Maintenance Fee](https://docs.firegiant.com/wix/osmf/) when its use generates revenue; review its terms if you distribute the MSI commercially.
 

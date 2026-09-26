@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Prepare Windows release
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out tagged sources
+        uses: actions/checkout@v7
+
+      - name: Validate tag and project versions
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          if ($tag -notmatch '^v(?<version>\d+\.\d+\.\d+)$') {
+            throw "The tag must have the form vX.Y.Z: $tag"
+          }
+          $version = $Matches.version
+
+          [xml]$project = Get-Content -LiteralPath .\CodexQuotaTray.csproj
+          [xml]$installer = Get-Content -LiteralPath .\installer\Product.wxs
+          $actual = @{
+            'Application' = $project.SelectSingleNode('/Project/PropertyGroup/Version').InnerText
+            'Assembly' = $project.SelectSingleNode('/Project/PropertyGroup/AssemblyVersion').InnerText
+            'File' = $project.SelectSingleNode('/Project/PropertyGroup/FileVersion').InnerText
+            'Informational' = $project.SelectSingleNode('/Project/PropertyGroup/InformationalVersion').InnerText
+            'MSI' = $installer.SelectSingleNode('/*[local-name()="Wix"]/*[local-name()="Package"]/@Version').Value
+          }
+          foreach ($entry in $actual.GetEnumerator()) {
+            $expected = if ($entry.Key -in @('Assembly', 'File')) { "$version.0" } else { $version }
+            if ($entry.Value -ne $expected) {
+              throw "$($entry.Key) version is $($entry.Value); expected $expected for tag $tag"
+            }
+          }
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish self-contained application
+        run: dotnet publish .\CodexQuotaTray.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o .\installer\app-single
+
+      - name: Build MSI
+        run: dotnet build .\installer\CodexQuotaTrayInstaller.wixproj -c Release
+
+      - name: Create draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $asset = 'CodexQuotaTray-Setup-win-x64.msi'
+          Copy-Item -LiteralPath .\installer\bin\x64\Release\CodexQuotaTray.msi -Destination $asset
+          gh release create $env:GITHUB_REF_NAME $asset --draft --generate-notes --verify-tag --title "Codex Quota Tray $env:GITHUB_REF_NAME"
