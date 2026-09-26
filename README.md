@@ -14,6 +14,14 @@ Le quota accessible est hebdomadaire, sans compteur journalier distinct. La coul
 
 Le connecteur Codex de cette conversation peut lire le quota avec la session de l’application. Le programme autonome, lui, interroge `codex app-server` et dépend de l’authentification que la CLI voit dans son propre environnement. Il ne lit ni ne copie les jetons. Si son menu indique que la CLI n’est pas connectée, utilise **Se connecter à Codex CLI…**. L’état de connexion observé depuis un environnement isolé ne permet pas de conclure que la CLI lancée directement sur Windows est déconnectée.
 
+## Prérequis développeur
+
+- Windows 10 ou 11, x64.
+- Le SDK .NET 10. Visual Studio doit être **Visual Studio 2026 (18.0 ou plus récent)** avec la charge de travail **Développement .NET Desktop**. Visual Studio 2022 ne prend pas en charge le ciblage .NET 10 dans l’IDE. Pour utiliser uniquement la ligne de commande, installe le [SDK .NET 10](https://learn.microsoft.com/dotnet/core/install/windows).
+- Pour ouvrir et compiler le projet MSI depuis Visual Studio, installe l’extension gratuite [HeatWave Community pour Visual Studio](https://docs.firegiant.com/heatwave/). Elle prend en charge Visual Studio 2026 et les projets WiX modernes.
+- Git est nécessaire pour cloner le dépôt. Le SDK WiX 6.0.2 est restauré automatiquement depuis NuGet par MSBuild; aucune installation WiX séparée n’est requise pour les builds en ligne de commande.
+- Codex CLI connecté est requis pour exécuter l’application et lire un quota. Il n’est pas nécessaire pour compiler le code.
+
 ## Compilation
 
 Avec le SDK .NET 10 installé sur Windows :
@@ -34,6 +42,8 @@ dotnet build .\installer\CodexQuotaTray.wixproj -c Release
 ```
 
 Le MSI est produit dans `installer\bin\x64\Release\CodexQuotaTray.msi`. Les exécutables, MSI et autres sorties de compilation sont exclus du dépôt; ils sont générés localement avec ces commandes.
+
+WiX Toolset 6 est soumis à l’[Open Source Maintenance Fee](https://docs.firegiant.com/wix/osmf/) si son utilisation génère des revenus; consulte ses conditions si tu distribues le MSI commercialement.
 
 ## Note de compatibilité
 
