@@ -8,6 +8,7 @@
   <data name="Menu.StatusLoading" xml:space="preserve"><value>Reading Codex quota…</value></data>
   <data name="Menu.Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="Menu.Settings" xml:space="preserve"><value>Settings…</value></data>
+  <data name="Menu.ShowTaskbarWidget" xml:space="preserve"><value>Show taskbar widget</value></data>
   <data name="Menu.StartWithWindows" xml:space="preserve"><value>Start with Windows</value></data>
   <data name="Menu.SignIn" xml:space="preserve"><value>Sign in to Codex CLI…</value></data>
   <data name="Menu.OpenDashboard" xml:space="preserve"><value>Open usage dashboard</value></data>
@@ -26,6 +27,10 @@
   <data name="Tooltip.ResetFormat" xml:space="preserve"><value>MM/dd HH:mm</value></data>
   <data name="Tooltip.Weekly" xml:space="preserve"><value>Week {0}% resets {1}</value></data>
   <data name="Tooltip.FiveHour" xml:space="preserve"><value>5h {0}% resets {1}</value></data>
+  <data name="Widget.FiveHourLabel" xml:space="preserve"><value>5h</value></data>
+  <data name="Widget.WeeklyLabel" xml:space="preserve"><value>7d</value></data>
+  <data name="Widget.UnknownPercent" xml:space="preserve"><value>--%</value></data>
+  <data name="Widget.UnknownReset" xml:space="preserve"><value>--:--</value></data>
   <data name="Error.CliNotFound" xml:space="preserve"><value>Codex CLI not found. Install Codex CLI, then refresh.</value></data>
   <data name="Status.ReadingQuota" xml:space="preserve"><value>Reading Codex quota…</value></data>
   <data name="Status.Summary" xml:space="preserve"><value>5h {0}% · week {1}%</value></data>

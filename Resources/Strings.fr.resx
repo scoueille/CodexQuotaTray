@@ -8,6 +8,7 @@
   <data name="Menu.StatusLoading" xml:space="preserve"><value>Lecture du quota Codex…</value></data>
   <data name="Menu.Refresh" xml:space="preserve"><value>Actualiser</value></data>
   <data name="Menu.Settings" xml:space="preserve"><value>Configuration…</value></data>
+  <data name="Menu.ShowTaskbarWidget" xml:space="preserve"><value>Afficher le widget de la barre des tâches</value></data>
   <data name="Menu.StartWithWindows" xml:space="preserve"><value>Lancer avec Windows</value></data>
   <data name="Menu.SignIn" xml:space="preserve"><value>Se connecter à Codex CLI…</value></data>
   <data name="Menu.OpenDashboard" xml:space="preserve"><value>Ouvrir le tableau de bord</value></data>
@@ -26,6 +27,10 @@
   <data name="Tooltip.ResetFormat" xml:space="preserve"><value>dd/MM HH:mm</value></data>
   <data name="Tooltip.Weekly" xml:space="preserve"><value>Hebdo {0}% réinit. {1}</value></data>
   <data name="Tooltip.FiveHour" xml:space="preserve"><value>5 h {0}% réinit. {1}</value></data>
+  <data name="Widget.FiveHourLabel" xml:space="preserve"><value>5 h</value></data>
+  <data name="Widget.WeeklyLabel" xml:space="preserve"><value>7 j</value></data>
+  <data name="Widget.UnknownPercent" xml:space="preserve"><value>-- %</value></data>
+  <data name="Widget.UnknownReset" xml:space="preserve"><value>--:--</value></data>
   <data name="Error.CliNotFound" xml:space="preserve"><value>CLI Codex introuvable. Installe Codex CLI puis actualise.</value></data>
   <data name="Status.ReadingQuota" xml:space="preserve"><value>Lecture du quota Codex…</value></data>
   <data name="Status.Summary" xml:space="preserve"><value>5 h {0} % · sem. {1} %</value></data>

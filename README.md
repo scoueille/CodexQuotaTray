@@ -4,7 +4,7 @@
 
 ## Français
 
-Indicateur de quotas Codex dans la zone de notification Windows. L’application lit le quota avec Codex CLI et actualise l’icône toutes les cinq minutes. L’infobulle affiche chaque quota sur sa propre ligne, suivi de son heure de réinitialisation.
+Indicateur de quotas Codex dans la zone de notification Windows et widget expérimental intégré à la barre des tâches. L’application lit le quota avec Codex CLI et actualise l’affichage toutes les cinq minutes. L’infobulle affiche chaque quota sur sa propre ligne, suivi de son heure de réinitialisation.
 
 L’interface, les infobulles, les notifications et les messages suivent la langue d’affichage de Windows en français, allemand ou anglais. L’anglais est utilisé pour les autres langues.
 
@@ -16,19 +16,25 @@ L’interface, les infobulles, les notifications et les messages suivent la lang
 
 La partie consommée des deux anneaux est transparente et laisse voir le fond de la barre des tâches.
 
+## Widget de la barre des tâches
+
+Le widget affiche deux lignes : **5 h** avec le quota restant, son pourcentage et l’heure de réinitialisation; puis **7 j** avec le quota restant, son pourcentage et la date/heure de réinitialisation. Le point coloré entouré d’un cercle contrasté reprend le rythme de l’allocation quotidienne. Les deux barres indiquent la part restante de chaque quota avec une couleur choisie pour contraster avec le thème Windows. Le fond du widget est transparent. Le widget est activé par défaut; **Afficher le widget de la barre des tâches** dans le menu de l’icône permet de le masquer ou de le réafficher. La préférence est mémorisée.
+
+Le widget est expérimental. Il se dessine dans la barre principale, à gauche du bouton météo/Widgets lorsqu’il est présent, sinon juste avant la zone de notification. Si Windows refuse cette intégration, l’application utilise une fenêtre superposée. Le widget suit la barre si l’Explorateur Windows redémarre. Windows ne réserve pas automatiquement de place pour ce type d’élément : selon le nombre de boutons affichés, il peut recouvrir une partie de la zone des applications. L’icône de notification reste disponible comme solution de repli. Le mode d’affichage et ses éventuels échecs sont consignés dans `%LOCALAPPDATA%\CodexQuotaTray\TaskbarWidget.log`.
+
 Codex fournit un quota hebdomadaire, pas un compteur journalier. Par défaut, l’application répartit donc ce quota en **7 allocations quotidiennes égales**. Dans **Configuration**, accessible par clic droit sur l’icône, le nombre de jours de travail peut être réglé de 1 à 7; la cible quotidienne devient alors le quota hebdomadaire divisé par ce nombre. Le réglage est mémorisé pour l’utilisateur Windows. L’application compare le quota utilisé à la cible cumulée; un excès reste reporté sur les jours suivants jusqu’à ce que la cible le rattrape.
 
 La couleur du point représente la part de l’allocation quotidienne cible consommée : vert sous 25 %, jaune de 25 % à moins de 50 %, orange de 50 % à moins de 75 %, rouge de 75 % à 100 %, et violet au-delà de 100 %.
 
 ## Notifications
 
-Windows signale le franchissement des seuils 25 %, 50 %, 75 % et 100 % de l’allocation quotidienne cible, ainsi que le passage sous 50 % ou 25 % de quota restant sur 5 h. La première lecture après le lancement établit la référence sans envoyer de notification rétroactive.
+Windows signale le franchissement des seuils 25 %, 50 %, 75 % et 100 % de l’allocation quotidienne cible, ainsi que le passage sous 50 % ou 25 % de quota restant sur 5 h. La première lecture après le lancement établit la référence sans envoyer de notification rétroactive. Les demandes et les événements d’affichage sont consignés dans `%LOCALAPPDATA%\CodexQuotaTray\Notifications.log`.
 
 ## Utilisation
 
 1. Installer le Codex CLI si nécessaire.
 2. Au premier lancement, clic droit sur l’icône puis **Se connecter à Codex CLI…**. Termine la connexion dans la fenêtre qui s’ouvre.
-3. L’icône s’actualise automatiquement toutes les cinq minutes. **Actualiser** lance une lecture immédiate. Double-clic sur l’icône ouvre le tableau de bord d’utilisation. Le menu contextuel affiche la version de l’application, permet de modifier **Configuration**, de configurer **Lancer avec Windows** et de quitter l’application. Le raccourci créé dans le menu Démarrer utilise une icône dédiée.
+3. Le widget et l’icône s’actualisent automatiquement toutes les cinq minutes. **Actualiser** lance une lecture immédiate. Double-clic sur l’icône ouvre le tableau de bord d’utilisation. Le menu contextuel affiche la version de l’application, permet d’afficher ou masquer le widget, de modifier **Configuration**, de configurer **Lancer avec Windows** et de quitter l’application. Le raccourci créé dans le menu Démarrer utilise une icône dédiée.
 
 Lors d’une mise à niveau, le programme se ferme pour laisser remplacer son exécutable puis se relance automatiquement. Le setup affiche seulement la progression de l’installation.
 
@@ -86,8 +92,8 @@ Le workflow GitHub Actions **CI** exécute les tests, puis compile l’applicati
 Pour préparer une version, mettre à jour `Version`, `AssemblyVersion`, `FileVersion` et `InformationalVersion` dans `CodexQuotaTray.csproj`, ainsi que `Version` dans `installer/Product.wxs`. Après avoir poussé le commit et vérifié la CI, créer et pousser un tag correspondant, par exemple :
 
 ```powershell
-git tag -a v1.0.4 -m "Codex Quota Tray v1.0.4"
-git push origin v1.0.4
+git tag -a v1.1.12 -m "Codex Quota Tray v1.1.12"
+git push origin v1.1.12
 ```
 
 Le workflow **Release** vérifie que le tag et les versions correspondent, exécute les tests, construit le MSI depuis ce tag et crée une Release **en brouillon** avec des notes générées et `CodexQuotaTray-Setup-win-x64.msi`. Vérifier le brouillon et l’installateur dans l’onglet **Releases**, puis publier la Release manuellement.
@@ -102,7 +108,7 @@ Le code source de ce dépôt est distribué sous licence MIT; voir [LICENSE](LIC
 
 ## English
 
-Codex quota indicator in the Windows notification area. The app reads quota data through Codex CLI and refreshes the icon every five minutes. The tooltip shows each quota on its own line, followed by its reset time.
+Codex quota indicator in the Windows notification area, with an experimental widget embedded in the taskbar. The app reads quota data through Codex CLI and refreshes the display every five minutes. The tooltip shows each quota on its own line, followed by its reset time.
 
 The interface, tooltips, notifications, and messages follow the Windows display language when it is French, German, or English. English is used for all other languages.
 
@@ -114,19 +120,25 @@ The interface, tooltips, notifications, and messages follow the Windows display 
 
 The consumed part of each ring is transparent, allowing the taskbar background to show through.
 
+### Taskbar widget
+
+The widget displays two rows: **5h** with the remaining quota, its percentage, and reset time; then **7d** with the remaining quota, its percentage, and reset date and time. The colored dot with a contrasting outline shows the daily allocation pace. Both bars show how much of each quota remains in a color chosen to contrast with the Windows theme. The widget background is transparent. The widget is enabled by default; choose **Show taskbar widget** from the tray icon menu to hide or show it. The preference is saved.
+
+The widget is experimental. It draws inside the primary taskbar to the left of the weather/Widgets button when present, or just before the notification area otherwise. If Windows rejects this integration, the app uses an overlay window. The widget follows the taskbar if Windows Explorer restarts. Windows does not reserve space automatically for this kind of widget, so it may cover part of the app-button area. The notification-area icon remains available as a fallback. The display mode and any failures are recorded in `%LOCALAPPDATA%\CodexQuotaTray\TaskbarWidget.log`.
+
 Codex provides a weekly quota, not a separate daily counter. By default, the app divides it into **7 equal daily allocations**. In **Settings**, available from the tray icon's right-click menu, the number of workdays can be set from 1 to 7; the daily target then becomes the weekly quota divided by that number. The setting is saved for the current Windows user. The app compares usage with the cumulative target, so any overuse carries forward to later days until the target catches up.
 
 The dot color represents how much of the target daily allocation has been used: green below 25%, yellow from 25% to below 50%, orange from 50% to below 75%, red from 75% through 100%, and purple above 100%.
 
 ### Notifications
 
-Windows notifications appear when usage crosses 25%, 50%, 75%, or 100% of the target daily allocation, and when the remaining 5-hour quota drops below 50% or 25%. The first reading after launch establishes a baseline and does not trigger a notification.
+Windows notifications appear when usage crosses 25%, 50%, 75%, or 100% of the target daily allocation, and when the remaining 5-hour quota drops below 50% or 25%. The first reading after launch establishes a baseline and does not trigger a notification. Requests and display events are recorded in `%LOCALAPPDATA%\CodexQuotaTray\Notifications.log`.
 
 ### Usage
 
 1. Install Codex CLI if needed.
 2. On first launch, right-click the icon and choose **Se connecter à Codex CLI…** (“Sign in to Codex CLI”). Complete sign-in in the window that opens.
-3. The icon refreshes automatically every five minutes. Choose **Actualiser** (“Refresh”) for an immediate reading. Double-click the icon to open the usage dashboard. The context menu displays the app version and lets you edit **Configuration** (“Settings”), configure **Lancer avec Windows** (“Start with Windows”), or choose **Quitter** (“Quit”). The Start menu shortcut uses a dedicated icon.
+3. The widget and icon refresh automatically every five minutes. Choose **Actualiser** (“Refresh”) for an immediate reading. Double-click the icon to open the usage dashboard. The context menu displays the app version and lets you show or hide the widget, edit **Configuration** (“Settings”), configure **Lancer avec Windows** (“Start with Windows”), or choose **Quitter** (“Quit”). The Start menu shortcut uses a dedicated icon.
 
 During an upgrade, the app closes so its executable can be replaced, then starts again automatically. The setup displays installation progress only.
 
@@ -184,8 +196,8 @@ The GitHub Actions **CI** workflow runs the tests, then builds the app and MSI o
 To prepare a version, update `Version`, `AssemblyVersion`, `FileVersion`, and `InformationalVersion` in `CodexQuotaTray.csproj`, plus `Version` in `installer/Product.wxs`. Push the commit and check CI, then create and push the matching tag, for example:
 
 ```powershell
-git tag -a v1.0.4 -m "Codex Quota Tray v1.0.4"
-git push origin v1.0.4
+git tag -a v1.1.12 -m "Codex Quota Tray v1.1.12"
+git push origin v1.1.12
 ```
 
 The **Release** workflow checks the tag against the project versions, runs the tests, builds the MSI from that tag, and creates a **draft** Release with generated notes and `CodexQuotaTray-Setup-win-x64.msi`. Review the draft and installer in **Releases**, then publish the Release manually.

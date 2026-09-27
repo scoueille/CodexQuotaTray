@@ -6,7 +6,7 @@
       Id="CodexQuotaTray.Msi"
       Name="Codex Quota Tray"
       Manufacturer="Codex Quota Tray"
-      Version="1.0.4"
+      Version="1.1.12"
       Language="1036"
       Scope="perUser"
       UpgradeCode="9D97AB88-9D8E-4CB0-AC60-F93E454A8B6A">
@@ -31,7 +31,9 @@
         <!-- La valeur HKCU sert de clé de composant; la seconde valeur lance l'application à l'ouverture de session. -->
         <RegistryValue Root="HKCU" Key="Software\CodexQuotaTray\Components" Name="ApplicationFiles" Type="integer" Value="1" KeyPath="yes" />
         <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="CodexQuotaTray" Type="string" Value="&quot;[#CodexQuotaTrayExe]&quot;" />
-        <Shortcut Id="AppShortcut" Directory="ApplicationProgramsFolder" Name="Codex Quota Tray" Target="[#CodexQuotaTrayExe]" WorkingDirectory="INSTALLFOLDER" Icon="CodexQuotaTrayIcon" />
+        <Shortcut Id="AppShortcut" Directory="ApplicationProgramsFolder" Name="Codex Quota Tray" Target="[#CodexQuotaTrayExe]" WorkingDirectory="INSTALLFOLDER" Icon="CodexQuotaTrayIcon">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="CodexQuotaTray.Desktop" />
+        </Shortcut>
         <RemoveFolder Id="RemoveInstallFolder" Directory="INSTALLFOLDER" On="uninstall" />
         <!-- Supprime les dossiers parents s'ils sont vides après la désinstallation. -->
         <RemoveFolder Id="RemovePerUserProgramsFolder" Directory="PerUserProgramFilesFolder" On="uninstall" />

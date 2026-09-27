@@ -10,6 +10,8 @@ namespace CodexQuotaTray;
 
 internal static class Program
 {
+    internal const string AppUserModelId = "CodexQuotaTray.Desktop";
+
     /// <summary>Version de l'assembly affichée dans le menu de l'icône et transmise à la CLI.</summary>
     internal static string AppVersion { get; } = typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "unknown";
 
@@ -18,11 +20,18 @@ internal static class Program
     [STAThread]
     private static void Main()
     {
+        var appIdResult = SetCurrentProcessExplicitAppUserModelID(AppUserModelId);
+        if (appIdResult != 0)
+            NotificationDiagnostics.Log($"process app ID registration failed: 0x{appIdResult:X8}");
         AppText.Initialize();
         QuotaPreferences.Load();
         ApplicationConfiguration.Initialize();
         Application.Run(new TrayApplicationForm());
     }
+
+    /// <summary>Assigns a stable Windows identity so notifications map to the installed Start shortcut.</summary>
+    [System.Runtime.InteropServices.DllImport("shell32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int SetCurrentProcessExplicitAppUserModelID(string appId);
 }
 
 internal sealed class TrayApplicationForm : Form
@@ -30,6 +39,8 @@ internal sealed class TrayApplicationForm : Form
     private readonly NotifyIcon _icon;
     private readonly ToolStripMenuItem _statusItem;
     private readonly System.Windows.Forms.Timer _timer;
+    private readonly System.Windows.Forms.Timer _widgetAttachTimer;
+    private readonly TaskbarWidgetController _taskbarWidget;
     private readonly QuotaNotifier _quotaNotifier = new();
     private readonly string? _codexPath;
     private Icon? _currentIcon;
@@ -44,6 +55,7 @@ internal sealed class TrayApplicationForm : Form
         FormBorderStyle = FormBorderStyle.FixedToolWindow;
         Opacity = 0;
         _codexPath = CodexCli.FindPath();
+        _taskbarWidget = new TaskbarWidgetController(QuotaPreferences.TaskbarWidgetVisible, this);
         _statusItem = new ToolStripMenuItem(AppText.Get("Menu.StatusStartup")) { Enabled = false };
 
         var menu = new ContextMenuStrip();
@@ -51,6 +63,31 @@ internal sealed class TrayApplicationForm : Form
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(AppText.Get("Menu.Refresh"), null, (_, _) => RefreshQuota());
         menu.Items.Add(AppText.Get("Menu.Settings"), null, (_, _) => OpenSettings());
+        var widgetItem = new ToolStripMenuItem(AppText.Get("Menu.ShowTaskbarWidget"))
+        {
+            CheckOnClick = true,
+            Checked = _taskbarWidget.IsVisible
+        };
+        widgetItem.Click += (_, _) =>
+        {
+            var previousVisibility = _taskbarWidget.IsVisible;
+            try
+            {
+                _taskbarWidget.SetVisible(widgetItem.Checked);
+                QuotaPreferences.SaveTaskbarWidgetVisible(widgetItem.Checked);
+            }
+            catch (Exception ex)
+            {
+                widgetItem.Checked = previousVisibility;
+                _taskbarWidget.SetVisible(previousVisibility);
+                MessageBox.Show(
+                    AppText.Format("Dialog.SettingsSaveError", ex.Message),
+                    AppText.Get("Dialog.SettingsTitle"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        };
+        menu.Items.Add(widgetItem);
         var startupItem = new ToolStripMenuItem(AppText.Get("Menu.StartWithWindows"))
         {
             CheckOnClick = true,
@@ -83,11 +120,17 @@ internal sealed class TrayApplicationForm : Form
             ContextMenuStrip = menu,
             Visible = true
         };
+        _icon.BalloonTipShown += (_, _) => NotificationDiagnostics.Log("Windows displayed a notification balloon");
+        _icon.BalloonTipClosed += (_, _) => NotificationDiagnostics.Log("Windows closed a notification balloon");
         _icon.DoubleClick += (_, _) => OpenUsageDashboard();
 
         _timer = new System.Windows.Forms.Timer { Interval = 5 * 60 * 1000 };
         _timer.Tick += (_, _) => RefreshQuota();
         _timer.Start();
+        _widgetAttachTimer = new System.Windows.Forms.Timer { Interval = 750 };
+        _widgetAttachTimer.Tick += (_, _) => _taskbarWidget.EnsureAttached();
+        _widgetAttachTimer.Start();
+        _taskbarWidget.EnsureAttached();
         RefreshQuota();
     }
 
@@ -161,8 +204,23 @@ internal sealed class TrayApplicationForm : Form
             AppText.Format("Tooltip.FiveHour", quota.FiveHourRemaining, quota.FiveHourReset.ToString(resetFormat, AppText.Culture)));
         _icon.Text = tooltip;
         SetIcon(TrayIcon.Create(quota.WeeklyRemaining, quota.FiveHourRemaining, dailyPace.Color));
+        _taskbarWidget.SetQuota(quota, dailyPace.Color);
         if (notification is not null)
-            _icon.ShowBalloonTip(5000, notification.Title, notification.Message, ToolTipIcon.Info);
+            ShowNotification(notification.Title, notification.Message, "threshold crossing");
+    }
+
+    /// <summary>Requests a notification balloon and records whether Windows reports displaying it.</summary>
+    private void ShowNotification(string title, string message, string reason)
+    {
+        NotificationDiagnostics.Log($"notification requested ({reason}): {message}");
+        try
+        {
+            _icon.ShowBalloonTip(5000, title, message, ToolTipIcon.Info);
+        }
+        catch (Exception error)
+        {
+            NotificationDiagnostics.Log($"notification request failed: {error}");
+        }
     }
 
     /// <summary>Affiche une erreur d'état et remplace l'icône par son apparence indisponible.</summary>
@@ -172,6 +230,7 @@ internal sealed class TrayApplicationForm : Form
         _statusItem.Text = message.Length > 70 ? message[..67] + "…" : message;
         _icon.Text = AppText.Get("Tooltip.Unavailable");
         SetIcon(TrayIcon.CreateUnavailable());
+        _taskbarWidget.SetUnavailable();
     }
 
     /// <summary>Remplace l'icône de notification et libère l'ancienne ressource graphique.</summary>
@@ -222,6 +281,9 @@ internal sealed class TrayApplicationForm : Form
         // Libère les ressources graphiques et l'icône système quand l'utilisateur quitte l'application.
         _timer.Stop();
         _timer.Dispose();
+        _widgetAttachTimer.Stop();
+        _widgetAttachTimer.Dispose();
+        _taskbarWidget.Dispose();
         _icon.Visible = false;
         _icon.Dispose();
         _currentIcon?.Dispose();
@@ -231,6 +293,27 @@ internal sealed class TrayApplicationForm : Form
 
 /// <summary>Contient le titre et le texte d'une notification de quota.</summary>
 internal sealed record QuotaNotification(string Title, string Message);
+
+/// <summary>Writes notification delivery events to a local diagnostic log.</summary>
+internal static class NotificationDiagnostics
+{
+    /// <summary>Appends a timestamped notification event without affecting the tray app if logging fails.</summary>
+    public static void Log(string message)
+    {
+        try
+        {
+            var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "CodexQuotaTray");
+            Directory.CreateDirectory(directory);
+            File.AppendAllText(Path.Combine(directory, "Notifications.log"),
+                $"{DateTimeOffset.Now:O} {message}{Environment.NewLine}");
+        }
+        catch
+        {
+            // A diagnostic log must never keep the quota indicator from running.
+        }
+    }
+}
 
 internal sealed class QuotaNotifier
 {
@@ -619,6 +702,15 @@ internal static class ThemeContrastColor
 {
     private const string PersonalizeKey = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
 
+    /// <summary>Chooses a transparent color key close to the Windows theme to limit antialiasing halos.</summary>
+    public static Color GetWidgetTransparencyKey()
+    {
+        var lightBackground = SystemInformation.HighContrast
+            ? SystemColors.Control.GetBrightness() > 0.5f
+            : IsLightTheme();
+        return lightBackground ? Color.FromArgb(254, 255, 254) : Color.FromArgb(1, 0, 1);
+    }
+
     /// <summary>Choisit une couleur d'anneau qui contraste avec la couleur d'accent de Windows.</summary>
     public static Color GetWeeklyRingColor()
     {
@@ -629,6 +721,13 @@ internal static class ThemeContrastColor
         var isLightTheme = IsLightTheme();
         var lightness = isLightTheme ? 0.42 : 0.68;
         return FromHsl((accent.GetHue() + 180f) % 360f, 0.88f, (float)lightness);
+    }
+
+    /// <summary>Chooses readable widget text colors for the current Windows appearance.</summary>
+    public static Color GetWidgetTextColor()
+    {
+        if (SystemInformation.HighContrast) return SystemColors.WindowText;
+        return IsLightTheme() ? Color.FromArgb(40, 40, 40) : Color.FromArgb(242, 242, 242);
     }
 
     /// <summary>Lit la couleur d'accent Windows auprès de DWM, si elle est disponible.</summary>
