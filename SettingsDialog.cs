@@ -23,6 +23,7 @@ internal sealed class SettingsDialog : Form
         var row = new FlowLayoutPanel
         {
             AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             FlowDirection = FlowDirection.LeftToRight,
             Location = new Point(20, 30),
             WrapContents = false
@@ -53,37 +54,43 @@ internal sealed class SettingsDialog : Form
         });
         Controls.Add(row);
 
-        var buttons = new Panel
+        var buttons = new TableLayoutPanel
         {
             Dock = DockStyle.Bottom,
             Height = 50,
-            Padding = new Padding(0, 0, 12, 0)
+            Padding = new Padding(0, 6, 12, 0),
+            ColumnCount = 3,
+            RowCount = 1,
+            GrowStyle = TableLayoutPanelGrowStyle.FixedSize
         };
+        buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
+        buttons.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 100));
+        buttons.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         var saveButton = new Button
         {
             Size = new Size(100, 32),
+            Anchor = AnchorStyles.None,
             DialogResult = DialogResult.OK,
             Text = AppText.Get("Dialog.Save")
         };
         var cancelButton = new Button
         {
             Size = new Size(100, 32),
+            Anchor = AnchorStyles.None,
             DialogResult = DialogResult.Cancel,
             Text = AppText.Get("Dialog.Cancel")
         };
-        buttons.Controls.Add(saveButton);
-        buttons.Controls.Add(cancelButton);
-        buttons.Resize += (_, _) => PositionButtons();
+        // Chaque bouton dispose d'une cellule propre; l'alignement ne repose
+        // pas sur une position calculée ni sur l'ordre de flux des contrôles.
+        buttons.Controls.Add(cancelButton, 1, 0);
+        buttons.Controls.Add(saveButton, 2, 0);
+
         Controls.Add(buttons);
-        PositionButtons();
+        // La rangée supérieure est ajoutée avant le pied de page; impose le
+        // z-order pour qu'elle ne recouvre jamais les boutons.
+        buttons.BringToFront();
         AcceptButton = saveButton;
         CancelButton = cancelButton;
-
-        // Aligne les boutons en bas à droite de la boîte de dialogue.
-        void PositionButtons()
-        {
-            saveButton.Location = new Point(buttons.ClientSize.Width - buttons.Padding.Right - saveButton.Width, 6);
-            cancelButton.Location = new Point(saveButton.Left - cancelButton.Width - 8, 6);
-        }
     }
 }
