@@ -19,39 +19,55 @@ internal sealed class EmbeddedTaskbarWidget : NativeWindow, IDisposable
     private const uint UlwAlpha = 0x00000002;
     private static readonly nint HwndTop = nint.Zero;
     private nint _taskbar;
+    private Rectangle? _bounds;
+    private object? _renderKey;
+    private bool _shown;
+    private bool _frameChanged;
 
     /// <summary>Creates or reuses the taskbar child, positions it, and supplies transparent pixels.</summary>
     public bool TryShow(nint taskbar, TaskbarWidgetNative.NativeRect taskbarRect,
-        int screenX, int screenY, int width, int height, Bitmap bitmap, out string error)
+        int screenX, int screenY, int width, int height, object renderKey, Func<Bitmap> createBitmap,
+        bool restoreOrder, out string error)
     {
         error = string.Empty;
         if (!EnsureChild(taskbar, out error)) return false;
 
         var x = screenX - taskbarRect.Left;
         var y = screenY - taskbarRect.Top;
-        if (!SetWindowPos(Handle, HwndTop, x, y, width, height,
-                SwpNoActivate | SwpFrameChanged))
+        var bounds = new Rectangle(x, y, width, height);
+        if ((_bounds != bounds || !_shown || restoreOrder) && !SetWindowPos(Handle, HwndTop, x, y, width, height,
+                SwpNoActivate | (_frameChanged ? SwpFrameChanged : 0)))
         {
             error = $"position failed: {Marshal.GetLastWin32Error()}";
             ResetHandle();
             return false;
         }
 
-        if (!Render(bitmap, out error))
+        _bounds = bounds;
+        _frameChanged = false;
+
+        if (!Equals(_renderKey, renderKey))
         {
-            ResetHandle();
-            return false;
+            using var bitmap = createBitmap();
+            if (!Render(bitmap, out error))
+            {
+                ResetHandle();
+                return false;
+            }
+            _renderKey = renderKey;
         }
 
-        ShowWindow(Handle, SwShowNoActivate);
+        if (!_shown || restoreOrder) ShowWindow(Handle, SwShowNoActivate);
+        _shown = true;
         return true;
     }
 
     /// <summary>Hides the child when the user disables the widget or placement is unavailable.</summary>
     public void Hide()
     {
-        if (Handle != nint.Zero && TaskbarWidgetNative.IsWindow(Handle))
+        if (_shown && Handle != nint.Zero && TaskbarWidgetNative.IsWindow(Handle))
             ShowWindow(Handle, SwHide);
+        _shown = false;
     }
 
     /// <summary>Releases the native child window and its Explorer parent relationship.</summary>
@@ -92,6 +108,7 @@ internal sealed class EmbeddedTaskbarWidget : NativeWindow, IDisposable
         }
 
         _taskbar = taskbar;
+        _frameChanged = true; // Recalculate the frame once after changing from popup to child styles.
         return true;
     }
 
@@ -183,6 +200,10 @@ internal sealed class EmbeddedTaskbarWidget : NativeWindow, IDisposable
     /// <summary>Destroys a live child or releases a handle already destroyed by Explorer.</summary>
     private void ResetHandle()
     {
+        _bounds = null;
+        _renderKey = null;
+        _shown = false;
+        _frameChanged = false;
         if (Handle == nint.Zero) return;
         if (TaskbarWidgetNative.IsWindow(Handle)) DestroyHandle();
         else ReleaseHandle();

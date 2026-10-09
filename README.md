@@ -18,6 +18,8 @@ La partie consommée des deux anneaux est transparente et laisse voir le fond de
 
 ## Widget de la barre des tâches
 
+La détection du bouton météo s’effectue sur un thread dédié, séparé de l’affichage, avec des coordonnées mises en cache et une actualisation au plus toutes les cinq secondes. Le widget ne se redessine que lorsque son contenu ou le thème change et ne se déplace que lorsque sa position change. Les appels de détection ou de mise à jour anormalement longs sont consignés dans le journal du widget pour faciliter le diagnostic des blocages d’Explorer.
+
 Le widget affiche deux lignes : **5 h** avec le quota restant, son pourcentage et l’heure de réinitialisation; puis **7 j** avec le quota restant, son pourcentage et la date/heure de réinitialisation. Le point coloré entouré d’un cercle contrasté reprend le rythme de l’allocation quotidienne. Les deux barres indiquent la part restante de chaque quota avec une couleur choisie pour contraster avec le thème Windows. Le fond du widget est transparent. Le widget est activé par défaut; **Afficher le widget de la barre des tâches** dans le menu de l’icône permet de le masquer ou de le réafficher. La préférence est mémorisée.
 
 Le widget est expérimental. Il se dessine dans la barre principale, à gauche du bouton météo/Widgets lorsqu’il est présent, sinon juste avant la zone de notification. Si Windows refuse cette intégration, l’application utilise une fenêtre superposée. Le widget suit la barre si l’Explorateur Windows redémarre. Windows ne réserve pas automatiquement de place pour ce type d’élément : selon le nombre de boutons affichés, il peut recouvrir une partie de la zone des applications. L’icône de notification reste disponible comme solution de repli. Le mode d’affichage et ses éventuels échecs sont consignés dans `%LOCALAPPDATA%\CodexQuotaTray\TaskbarWidget.log`.
@@ -121,6 +123,8 @@ The interface, tooltips, notifications, and messages follow the Windows display 
 The consumed part of each ring is transparent, allowing the taskbar background to show through.
 
 ### Taskbar widget
+
+Weather-button detection runs on a dedicated thread separate from the UI, with cached coordinates refreshed at most every five seconds. The widget redraws only when its content or theme changes and moves only when its position changes. Unusually slow detection or widget updates are recorded in the widget log to help diagnose Explorer hangs.
 
 The widget displays two rows: **5h** with the remaining quota, its percentage, and reset time; then **7d** with the remaining quota, its percentage, and reset date and time. The colored dot with a contrasting outline shows the daily allocation pace. Both bars show how much of each quota remains in a color chosen to contrast with the Windows theme. The widget background is transparent. The widget is enabled by default; choose **Show taskbar widget** from the tray icon menu to hide or show it. The preference is saved.
 

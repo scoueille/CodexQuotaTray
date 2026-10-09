@@ -2,7 +2,6 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.Runtime.InteropServices;
-using System.Windows.Automation;
 
 namespace CodexQuotaTray;
 
@@ -11,6 +10,7 @@ internal sealed class TaskbarWidgetController : IDisposable
 {
     private readonly TaskbarWidgetForm _window = new();
     private readonly EmbeddedTaskbarWidget _embeddedWindow = new();
+    private readonly WeatherButtonLocator _weather = new();
     private readonly Control _dispatchTarget;
     private readonly TaskbarWidgetNative.WinEventProc _shellEventCallback;
     private nint _foregroundHook;
@@ -24,16 +24,25 @@ internal sealed class TaskbarWidgetController : IDisposable
     private nint _embeddedTaskbar;
     private DateTimeOffset _embeddedRetryAfter;
     private string? _attachedMode;
+    private object? _overlayRenderKey;
+    private Rectangle? _overlayBounds;
+    private readonly System.Windows.Forms.Timer _shellUpdateTimer = new() { Interval = 250 };
 
     /// <summary>Creates the widget controller with the user's saved visibility preference.</summary>
     public TaskbarWidgetController(bool visible, Control dispatchTarget)
     {
         _visible = visible;
         _dispatchTarget = dispatchTarget;
+        _shellUpdateTimer.Tick += (_, _) =>
+        {
+            _shellUpdateTimer.Stop();
+            EnsureAttached(restoreOrder: true);
+        };
         _shellEventCallback = OnShellUiChanged;
         _foregroundHook = TaskbarWidgetNative.WatchForegroundChanges(_shellEventCallback);
         _windowHideHook = TaskbarWidgetNative.WatchWindowHides(_shellEventCallback);
         _menuEndHook = TaskbarWidgetNative.WatchMenuEnds(_shellEventCallback);
+        LogWidgetState($"widget initialized {Application.ProductVersion}: asynchronous weather detection, cached rendering");
     }
 
     /// <summary>Indicates whether the user has chosen to show the taskbar widget.</summary>
@@ -67,9 +76,10 @@ internal sealed class TaskbarWidgetController : IDisposable
     }
 
     /// <summary>Follows taskbar or display changes and restores the widget after shell UI changes.</summary>
-    public bool EnsureAttached()
+    public bool EnsureAttached(bool restoreOrder = false)
     {
         if (_disposed || !_visible) return false;
+        var started = System.Diagnostics.Stopwatch.GetTimestamp();
         try
         {
             var taskbar = TaskbarWidgetNative.FindPrimaryTaskbar();
@@ -85,7 +95,7 @@ internal sealed class TaskbarWidgetController : IDisposable
             var width = (int)MathF.Round(TaskbarWidgetForm.LogicalWidth * scale);
             var height = (int)MathF.Round(TaskbarWidgetForm.LogicalHeight * scale);
             var rightBoundary = geometry.TrayLeft;
-            if (TaskbarWidgetNative.TryGetWidgetsButtonLeft(taskbar, out var widgetsLeft) &&
+            if (_weather.TryGetLeft(taskbar, out var widgetsLeft) &&
                 widgetsLeft > geometry.Taskbar.Left && widgetsLeft < rightBoundary)
                 rightBoundary = widgetsLeft;
             var x = rightBoundary - width - (int)MathF.Round(4 * scale);
@@ -114,11 +124,12 @@ internal sealed class TaskbarWidgetController : IDisposable
                         TaskbarWidgetNative.GetWindowDpiAwarenessContext(taskbar));
                     try
                     {
-                        using var bitmap = _window.CreateLayeredBitmap(dpi, width, height);
                         if (_embeddedWindow.TryShow(taskbar, geometry.Taskbar, x, y, width, height,
-                                bitmap, out var embeddedError))
+                                _window.GetRenderKey(dpi, width, height),
+                                () => _window.CreateLayeredBitmap(dpi, width, height), restoreOrder,
+                                out var embeddedError))
                         {
-                            if (_window.IsHandleCreated && TaskbarWidgetNative.IsWindow(_window.Handle))
+                            if (_attachedMode == "overlay" && _window.IsHandleCreated && TaskbarWidgetNative.IsWindow(_window.Handle))
                                 TaskbarWidgetNative.ShowWindow(_window.Handle, TaskbarWidgetNative.SwHide);
                             if (_attachedMode != "embedded") LogWidgetState("attached embedded");
                             _attachedMode = "embedded";
@@ -151,7 +162,9 @@ internal sealed class TaskbarWidgetController : IDisposable
             if (widgetHandle == nint.Zero)
                 return false;
 
-            if (!TaskbarWidgetNative.SetWindowPos(widgetHandle, TaskbarWidgetNative.HwndTopmost, x, y, width, height,
+            var bounds = new Rectangle(x, y, width, height);
+            var needsPlacement = _attachedMode != "overlay" || _overlayBounds != bounds || restoreOrder;
+            if (needsPlacement && !TaskbarWidgetNative.SetWindowPos(widgetHandle, TaskbarWidgetNative.HwndTopmost, x, y, width, height,
                     TaskbarWidgetNative.SwpNoActivate | TaskbarWidgetNative.SwpShowWindow))
             {
                 HideWindow($"show failed: {Marshal.GetLastWin32Error()}");
@@ -160,12 +173,16 @@ internal sealed class TaskbarWidgetController : IDisposable
 
             // Explorer also owns topmost taskbar surfaces. Raise our already-topmost window
             // within that group after Shell flyouts or taskbar clicks change their order.
-            var raised = TaskbarWidgetNative.SetWindowPos(widgetHandle, TaskbarWidgetNative.HwndTop, 0, 0, 0, 0,
+            var raised = !needsPlacement || TaskbarWidgetNative.SetWindowPos(widgetHandle, TaskbarWidgetNative.HwndTop, 0, 0, 0, 0,
                 TaskbarWidgetNative.SwpNoActivate | TaskbarWidgetNative.SwpNoMove | TaskbarWidgetNative.SwpNoSize);
             if (!raised && !_raiseFailed)
                 LogWidgetState($"raise failed: {Marshal.GetLastWin32Error()}");
             _raiseFailed = !raised;
-            _window.RenderTaskbarSurface(dpi);
+            var renderKey = _window.GetRenderKey(dpi, width, height);
+            if (_attachedMode != "overlay" || !Equals(_overlayRenderKey, renderKey))
+                _window.RenderTaskbarSurface(dpi);
+            _overlayRenderKey = renderKey;
+            _overlayBounds = bounds;
             if (_attachedMode != "overlay") LogWidgetState("attached overlay");
             _attachedMode = "overlay";
             _attached = true;
@@ -176,6 +193,12 @@ internal sealed class TaskbarWidgetController : IDisposable
             LogWidgetError(error);
             HideWindow("attachment error");
             return false;
+        }
+        finally
+        {
+            var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(started);
+            if (elapsed.TotalSeconds >= 1)
+                LogWidgetState($"widget update slow: {elapsed.TotalMilliseconds:F0} ms ({_attachedMode ?? "hidden"})");
         }
     }
 
@@ -191,7 +214,7 @@ internal sealed class TaskbarWidgetController : IDisposable
     }
 
     /// <summary>Records visibility transitions so shell interactions can be diagnosed later.</summary>
-    private static void LogWidgetState(string state)
+    internal static void LogWidgetState(string state)
     {
         try
         {
@@ -212,6 +235,8 @@ internal sealed class TaskbarWidgetController : IDisposable
         uint eventThread, uint eventTime)
     {
         if (_disposed || !_visible || !_dispatchTarget.IsHandleCreated || _dispatchTarget.IsDisposed) return;
+        // Embedded children follow Explorer's own stacking; global focus events only help the overlay fallback.
+        if (_attachedMode == "embedded") return;
         if (eventType == TaskbarWidgetNative.EventObjectHide && (objectId != 0 || childId != 0)) return;
         if (_reattachQueued) return;
         try
@@ -221,7 +246,9 @@ internal sealed class TaskbarWidgetController : IDisposable
             _dispatchTarget.BeginInvoke((Action)(() =>
             {
                 _reattachQueued = false;
-                EnsureAttached();
+                // Keep the last event in a burst: dismissing Start must still restore the fallback overlay.
+                _shellUpdateTimer.Stop();
+                _shellUpdateTimer.Start();
             }));
         }
         catch (InvalidOperationException)
@@ -250,6 +277,8 @@ internal sealed class TaskbarWidgetController : IDisposable
     /// <summary>Creates the fallback overlay handle using the taskbar's DPI context.</summary>
     private void CreateHandleForTaskbar(nint taskbar)
     {
+        _overlayBounds = null;
+        _overlayRenderKey = null;
         var previousContext = TaskbarWidgetNative.SetThreadDpiAwarenessContext(
             TaskbarWidgetNative.GetWindowDpiAwarenessContext(taskbar));
         try { _ = _window.Handle; }
@@ -263,6 +292,8 @@ internal sealed class TaskbarWidgetController : IDisposable
     /// <summary>Recreates an invalid fallback overlay handle using the current taskbar DPI context.</summary>
     private void RecreateHandleForTaskbar(nint taskbar)
     {
+        _overlayBounds = null;
+        _overlayRenderKey = null;
         var previousContext = TaskbarWidgetNative.SetThreadDpiAwarenessContext(
             TaskbarWidgetNative.GetWindowDpiAwarenessContext(taskbar));
         try { _window.RecreateWidgetHandle(); }
@@ -284,6 +315,8 @@ internal sealed class TaskbarWidgetController : IDisposable
         _foregroundHook = nint.Zero;
         _windowHideHook = nint.Zero;
         _menuEndHook = nint.Zero;
+        _shellUpdateTimer.Dispose();
+        _weather.Dispose();
         HideWindow();
         _embeddedWindow.Dispose();
         _window.Dispose();
@@ -372,6 +405,12 @@ internal sealed class TaskbarWidgetForm : Form
         DrawWidget(graphics, dpi / 96f, width, height, Color.Transparent);
         return bitmap;
     }
+
+    /// <summary>Identifies visible content and theme changes so unchanged surfaces do not need another bitmap.</summary>
+    public object GetRenderKey(uint dpi, int width, int height) =>
+        (_quota?.FiveHourRemaining, _quota?.WeeklyRemaining, _quota?.FiveHourReset, _quota?.WeeklyReset,
+            _dailyPaceColor.ToArgb(), dpi, width, height, ThemeContrastColor.GetWidgetTextColor().ToArgb(),
+            ThemeContrastColor.GetWeeklyRingColor().ToArgb(), ThemeContrastColor.GetWidgetTransparencyKey().ToArgb());
 
     /// <summary>Draws localized labels, remaining percentages, reset times, bars, and the daily marker.</summary>
     private void DrawWidget(Graphics graphics, float scale, int width, int height, Color background)
@@ -492,9 +531,6 @@ internal static class TaskbarWidgetNative
     internal const uint WinEventSkipOwnProcess = 0x0002;
     internal static readonly nint HwndTop = nint.Zero;
     internal static readonly nint HwndTopmost = new(-1);
-    private static nint _widgetsTaskbar;
-    private static AutomationElement? _widgetsButton;
-    private static int _lastWidgetsLeft;
     private static nint _trayTaskbar;
     private static int _lastTrayLeft;
 
@@ -547,38 +583,6 @@ internal static class TaskbarWidgetNative
             _lastTrayLeft > taskbarRect.Left && _lastTrayLeft < taskbarRect.Right
                 ? _lastTrayLeft : taskbarRect.Right);
         return true;
-    }
-
-    /// <summary>Finds the Windows Widgets/weather button by its stable accessibility identifier.</summary>
-    internal static bool TryGetWidgetsButtonLeft(nint taskbar, out int left)
-    {
-        if (_widgetsTaskbar != taskbar)
-        {
-            _widgetsTaskbar = taskbar;
-            _widgetsButton = null;
-            _lastWidgetsLeft = 0;
-        }
-
-        try
-        {
-            _widgetsButton ??= AutomationElement.FromHandle(taskbar).FindFirst(
-                TreeScope.Descendants,
-                new PropertyCondition(AutomationElement.AutomationIdProperty, "WidgetsButton"));
-            if (_widgetsButton is not null && !_widgetsButton.Current.IsOffscreen)
-            {
-                var bounds = _widgetsButton.Current.BoundingRectangle;
-                if (!bounds.IsEmpty && bounds.Width > 0)
-                    _lastWidgetsLeft = (int)Math.Round(bounds.Left);
-            }
-        }
-        catch (Exception)
-        {
-            // Weather detection is optional; a transient UI Automation failure must not hide the quota widget.
-            _widgetsButton = null;
-        }
-
-        left = _lastWidgetsLeft;
-        return left > 0;
     }
 
     /// <summary>Reports whether Windows still recognizes the supplied native window handle.</summary>
