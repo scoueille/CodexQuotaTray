@@ -59,4 +59,5 @@
   <data name="Error.Generic" xml:space="preserve"><value>Codex-Fehler.</value></data>
   <data name="Error.StartupKeyUnavailable" xml:space="preserve"><value>Der Windows-Autostart-Registrierungsschlüssel konnte nicht geöffnet werden.</value></data>
   <data name="Error.SettingsKeyUnavailable" xml:space="preserve"><value>Der Registrierungsschlüssel für die Einstellungen konnte nicht geöffnet werden.</value></data>
+  <data name="Error.QuotaTimeout" xml:space="preserve"><value>Codex hat nicht innerhalb von 30 Sekunden geantwortet.</value></data>
 </root>

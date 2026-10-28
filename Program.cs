@@ -11,6 +11,7 @@ namespace CodexQuotaTray;
 internal static class Program
 {
     internal const string AppUserModelId = "CodexQuotaTray.Desktop";
+    internal const string RecoveryArgument = "--quota-recovery";
 
     /// <summary>Version de l'assembly affichée dans le menu de l'icône et transmise à la CLI.</summary>
     internal static string AppVersion { get; } = typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "unknown";
@@ -18,7 +19,7 @@ internal static class Program
     // Démarre uniquement la fenêtre cachée qui porte l'icône et la boucle d'actualisation.
     /// <summary>Configure la langue et les préférences, puis lance l'application de zone de notification.</summary>
     [STAThread]
-    private static void Main()
+    private static void Main(string[] args)
     {
         var appIdResult = SetCurrentProcessExplicitAppUserModelID(AppUserModelId);
         if (appIdResult != 0)
@@ -26,7 +27,7 @@ internal static class Program
         AppText.Initialize();
         QuotaPreferences.Load();
         ApplicationConfiguration.Initialize();
-        Application.Run(new TrayApplicationForm());
+        Application.Run(new TrayApplicationForm(args.Contains(RecoveryArgument, StringComparer.Ordinal)));
     }
 
     /// <summary>Assigns a stable Windows identity so notifications map to the installed Start shortcut.</summary>
@@ -42,19 +43,21 @@ internal sealed class TrayApplicationForm : Form
     private readonly System.Windows.Forms.Timer _widgetAttachTimer;
     private readonly TaskbarWidgetController _taskbarWidget;
     private readonly QuotaNotifier _quotaNotifier = new();
-    private readonly string? _codexPath;
+    private bool _automaticRestartAttempted;
+    private readonly CancellationTokenSource _shutdown = new();
     private Icon? _currentIcon;
     private bool _refreshing;
 
     /// <summary>Crée l'icône, son menu et le minuteur qui actualise les quotas.</summary>
-    public TrayApplicationForm()
+    public TrayApplicationForm(bool automaticRestartAttempted = false)
     {
         // La fenêtre reste invisible : l'interface de l'application est le menu de l'icône de notification.
         ShowInTaskbar = false;
         WindowState = FormWindowState.Minimized;
         FormBorderStyle = FormBorderStyle.FixedToolWindow;
         Opacity = 0;
-        _codexPath = CodexCli.FindPath();
+        _automaticRestartAttempted = automaticRestartAttempted;
+        QuotaRefreshRecovery.Log($"started {Program.AppVersion}; automatic restart already attempted: {automaticRestartAttempted}");
         _taskbarWidget = new TaskbarWidgetController(QuotaPreferences.TaskbarWidgetVisible, this);
         _statusItem = new ToolStripMenuItem(AppText.Get("Menu.StatusStartup")) { Enabled = false };
 
@@ -131,34 +134,50 @@ internal sealed class TrayApplicationForm : Form
         _widgetAttachTimer.Tick += (_, _) => _taskbarWidget.EnsureAttached();
         _widgetAttachTimer.Start();
         _taskbarWidget.EnsureAttached();
-        RefreshQuota();
     }
 
     /// <summary>Lance la lecture des quotas sans bloquer l'interface.</summary>
-    private void RefreshQuota()
+    private async void RefreshQuota()
     {
-        if (_refreshing) return;
-        if (_codexPath is null)
-        {
-            SetError(AppText.Get("Error.CliNotFound"));
-            return;
-        }
-
+        if (_refreshing || _shutdown.IsCancellationRequested) return;
         _refreshing = true;
         _statusItem.Text = AppText.Get("Status.ReadingQuota");
-        // L'appel CLI peut attendre le serveur; il s'exécute hors du fil UI pour garder le menu réactif.
-        _ = Task.Run(async () =>
+        try
         {
-            try
-            {
-                var quota = await CodexCli.ReadQuotaAsync(_codexPath);
-                BeginInvoke(() => SetQuota(quota));
-            }
-            catch (Exception ex)
-            {
-                BeginInvoke(() => SetError(ex.Message));
-            }
-        });
+            // Resolve Codex again after updates; discovery and CLI communication never run on the UI thread.
+            var quota = await Task.Run(() => QuotaRefreshRecovery.ReadWithRetryAsync(_shutdown.Token));
+            if (!_shutdown.IsCancellationRequested) SetQuota(quota);
+        }
+        catch (OperationCanceledException) when (_shutdown.IsCancellationRequested) { }
+        catch (Exception error)
+        {
+            if (_shutdown.IsCancellationRequested) return;
+            QuotaRefreshRecovery.Log($"refresh failed: {error.GetType().Name}: {error.Message}");
+            SetError(error.Message);
+            if (QuotaRefreshRecovery.IsTransient(error)) TryRestartAfterQuotaFailure();
+        }
+        finally { _refreshing = false; }
+    }
+
+    /// <summary>Attempts one application restart; the replacement inherits a flag preventing a restart loop.</summary>
+    private void TryRestartAfterQuotaFailure()
+    {
+        if (_automaticRestartAttempted) return;
+        _automaticRestartAttempted = true;
+        try
+        {
+            var startInfo = new ProcessStartInfo(Application.ExecutablePath) { UseShellExecute = false };
+            startInfo.ArgumentList.Add(Program.RecoveryArgument);
+            using var replacement = Process.Start(startInfo)
+                ?? throw new InvalidOperationException("The replacement process did not start.");
+            QuotaRefreshRecovery.Log("automatic restart requested; replacement cannot automatically restart again");
+            Close();
+        }
+        catch (Exception error)
+        {
+            QuotaRefreshRecovery.Log($"automatic restart failed: {error.Message}");
+            // Keep the existing app and its periodic refresh timer if launching the replacement fails.
+        }
     }
 
     /// <summary>Affiche les préférences et applique le nombre de jours enregistré.</summary>
@@ -186,7 +205,6 @@ internal sealed class TrayApplicationForm : Form
     /// <summary>Met à jour le menu, l'icône et les alertes à partir des quotas reçus.</summary>
     private void SetQuota(Quota quota)
     {
-        _refreshing = false;
         // Le rythme quotidien est estimé à partir du quota hebdomadaire et du jour courant de la fenêtre.
         var dailyPace = DailyQuotaPace.Calculate(
             quota.WeeklyUsedPercent,
@@ -226,7 +244,6 @@ internal sealed class TrayApplicationForm : Form
     /// <summary>Affiche une erreur d'état et remplace l'icône par son apparence indisponible.</summary>
     private void SetError(string message)
     {
-        _refreshing = false;
         _statusItem.Text = message.Length > 70 ? message[..67] + "…" : message;
         _icon.Text = AppText.Get("Tooltip.Unavailable");
         SetIcon(TrayIcon.CreateUnavailable());
@@ -245,15 +262,15 @@ internal sealed class TrayApplicationForm : Form
     /// <summary>Ouvre la procédure de connexion de la CLI Codex.</summary>
     private void StartLogin()
     {
-        if (_codexPath is null)
-        {
-            SetError(AppText.Get("Error.CliNotFound"));
-            return;
-        }
-
         try
         {
-            Process.Start(new ProcessStartInfo(_codexPath, "login") { UseShellExecute = true });
+            var codexPath = CodexCli.FindPath();
+            if (codexPath is null)
+            {
+                SetError(AppText.Get("Error.CliNotFound"));
+                return;
+            }
+            Process.Start(new ProcessStartInfo(codexPath, "login") { UseShellExecute = true });
             _statusItem.Text = AppText.Get("Status.SignInComplete");
         }
         catch (Exception ex)
@@ -273,12 +290,14 @@ internal sealed class TrayApplicationForm : Form
     {
         base.OnShown(e);
         Hide();
+        RefreshQuota();
     }
 
     /// <summary>Libère le minuteur et les icônes quand l'application se ferme.</summary>
     protected override void OnFormClosed(FormClosedEventArgs e)
     {
         // Libère les ressources graphiques et l'icône système quand l'utilisateur quitte l'application.
+        _shutdown.Cancel();
         _timer.Stop();
         _timer.Dispose();
         _widgetAttachTimer.Stop();
@@ -418,8 +437,12 @@ internal static class CodexCli
     }
 
     /// <summary>Interroge le serveur local de la CLI Codex et renvoie les quotas du compte.</summary>
-    public static async Task<Quota> ReadQuotaAsync(string codexPath)
+    public static async Task<Quota> ReadQuotaAsync(string codexPath, CancellationToken cancellationToken = default)
     {
+        // Bound the entire exchange, including writes, so a stalled server cannot leave refresh permanently busy.
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(30));
+        var token = timeout.Token;
         // Démarre app-server en mode stdio et échange avec lui en JSON-RPC, sans lire de jeton d'authentification.
         using var process = new Process
         {
@@ -435,10 +458,9 @@ internal static class CodexCli
         process.StartInfo.Environment["CODEX_NO_UPDATE_CHECK"] = "1";
         process.ErrorDataReceived += (_, _) => { };
         if (!process.Start()) throw new InvalidOperationException(AppText.Get("Error.AppServerStart"));
-        process.BeginErrorReadLine();
-
         try
         {
+            process.BeginErrorReadLine();
             var initializeRequest = JsonSerializer.Serialize(new
             {
                 jsonrpc = "2.0",
@@ -450,23 +472,28 @@ internal static class CodexCli
                     capabilities = new { experimentalApi = true }
                 }
             });
-            await process.StandardInput.WriteLineAsync(initializeRequest);
-            await process.StandardInput.FlushAsync();
-            using var initialize = await ReadResponseAsync(process, 1);
+            await process.StandardInput.WriteLineAsync(initializeRequest.AsMemory(), token);
+            await process.StandardInput.FlushAsync(token);
+            using var initialize = await ReadResponseAsync(process, 1, token);
             if (initialize.RootElement.TryGetProperty("error", out var initError))
                 throw new InvalidOperationException(ReadError(initError));
 
-            await process.StandardInput.WriteLineAsync("{\"jsonrpc\":\"2.0\",\"method\":\"initialized\",\"params\":{}}");
-            await process.StandardInput.WriteLineAsync("{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"account/rateLimits/read\",\"params\":{\"excludeResetCreditDetails\":true}}");
-            await process.StandardInput.FlushAsync();
+            await process.StandardInput.WriteLineAsync("{\"jsonrpc\":\"2.0\",\"method\":\"initialized\",\"params\":{}}".AsMemory(), token);
+            await process.StandardInput.WriteLineAsync("{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"account/rateLimits/read\",\"params\":{\"excludeResetCreditDetails\":true}}".AsMemory(), token);
+            await process.StandardInput.FlushAsync(token);
 
-            using var response = await ReadResponseAsync(process, 2);
+            using var response = await ReadResponseAsync(process, 2, token);
             return ParseQuota(response.RootElement);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(AppText.Get("Error.QuotaTimeout"));
         }
         finally
         {
-            try { process.StandardInput.Close(); } catch { }
-            if (!process.HasExited) process.Kill(true);
+            // Stop only the app-server created for this reading; never stop the user's Codex desktop app.
+            try { if (!process.HasExited) process.Kill(true); }
+            catch (Exception error) { QuotaRefreshRecovery.Log($"app-server cleanup failed: {error.Message}"); }
         }
     }
 
@@ -497,14 +524,13 @@ internal static class CodexCli
     }
 
     /// <summary>Attend la réponse JSON-RPC correspondant à l'identifiant demandé.</summary>
-    private static async Task<JsonDocument> ReadResponseAsync(Process process, int expectedId)
+    private static async Task<JsonDocument> ReadResponseAsync(Process process, int expectedId, CancellationToken token)
     {
         // Ignore les notifications non sollicitées et attend la réponse portant l'identifiant JSON-RPC demandé.
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(25));
         while (true)
         {
-            var line = await process.StandardOutput.ReadLineAsync(timeout.Token);
-            if (line is null) throw new InvalidOperationException(AppText.Get("Error.AppServerClosed"));
+            var line = await process.StandardOutput.ReadLineAsync(token);
+            if (line is null) throw new EndOfStreamException(AppText.Get("Error.AppServerClosed"));
             using var message = JsonDocument.Parse(line);
             if (!message.RootElement.TryGetProperty("id", out var id) || id.ValueKind != JsonValueKind.Number || id.GetInt32() != expectedId)
                 continue;

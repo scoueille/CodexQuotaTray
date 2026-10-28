@@ -59,4 +59,5 @@
   <data name="Error.Generic" xml:space="preserve"><value>Erreur Codex.</value></data>
   <data name="Error.StartupKeyUnavailable" xml:space="preserve"><value>Impossible d’ouvrir la clé de démarrage Windows.</value></data>
   <data name="Error.SettingsKeyUnavailable" xml:space="preserve"><value>Impossible d’ouvrir la clé de configuration.</value></data>
+  <data name="Error.QuotaTimeout" xml:space="preserve"><value>Codex n’a pas répondu dans les 30 secondes.</value></data>
 </root>

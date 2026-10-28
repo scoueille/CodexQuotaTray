@@ -13,10 +13,10 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Title>Codex Quota Tray</Title>
     <Product>Codex Quota Tray</Product>
-    <Version>1.1.16</Version>
-    <AssemblyVersion>1.1.16.0</AssemblyVersion>
-    <FileVersion>1.1.16.0</FileVersion>
-    <InformationalVersion>1.1.16</InformationalVersion>
+    <Version>1.1.17</Version>
+    <AssemblyVersion>1.1.17.0</AssemblyVersion>
+    <FileVersion>1.1.17.0</FileVersion>
+    <InformationalVersion>1.1.17</InformationalVersion>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
   <ItemGroup>

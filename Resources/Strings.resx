@@ -59,4 +59,5 @@
   <data name="Error.Generic" xml:space="preserve"><value>Codex error.</value></data>
   <data name="Error.StartupKeyUnavailable" xml:space="preserve"><value>The Windows startup registry key could not be opened.</value></data>
   <data name="Error.SettingsKeyUnavailable" xml:space="preserve"><value>The settings registry key could not be opened.</value></data>
+  <data name="Error.QuotaTimeout" xml:space="preserve"><value>Codex did not respond within 30 seconds.</value></data>
 </root>

@@ -34,6 +34,8 @@ Windows signale le franchissement des seuils 25 %, 50 %, 75 % et 100 % de l’al
 
 ## Utilisation
 
+Après une mise à jour de Codex, l’application recherche de nouveau l’exécutable CLI à chaque lecture. Chaque échange avec le serveur est limité à 30 secondes. En cas d’erreur technique (connexion interrompue, exécutable inaccessible ou délai dépassé), elle attend trois secondes puis réessaie une fois. Si cette seconde tentative échoue aussi pour une raison technique, elle tente une seule relance automatique de Codex Quota Tray. L’instance ainsi relancée ne peut pas se relancer automatiquement à son tour, même si une lecture ultérieure réussit : un nouveau lancement manuel réautorise cette relance de secours. Les erreurs d’authentification ou de réponse Codex ne déclenchent pas cette récupération. Les tentatives sont consignées dans `%LOCALAPPDATA%\CodexQuotaTray\QuotaRefresh.log`.
+
 1. Installer le Codex CLI si nécessaire.
 2. Au premier lancement, clic droit sur l’icône puis **Se connecter à Codex CLI…**. Termine la connexion dans la fenêtre qui s’ouvre.
 3. Le widget et l’icône s’actualisent automatiquement toutes les cinq minutes. **Actualiser** lance une lecture immédiate. Double-clic sur l’icône ouvre le tableau de bord d’utilisation. Le menu contextuel affiche la version de l’application, permet d’afficher ou masquer le widget, de modifier **Configuration**, de configurer **Lancer avec Windows** et de quitter l’application. Le raccourci créé dans le menu Démarrer utilise une icône dédiée.
@@ -139,6 +141,8 @@ The dot color represents how much of the target daily allocation has been used: 
 Windows notifications appear when usage crosses 25%, 50%, 75%, or 100% of the target daily allocation, and when the remaining 5-hour quota drops below 50% or 25%. The first reading after launch establishes a baseline and does not trigger a notification. Requests and display events are recorded in `%LOCALAPPDATA%\CodexQuotaTray\Notifications.log`.
 
 ### Usage
+
+To handle Codex updates, the app rediscovers the CLI executable on every quota reading. Each server exchange has a 30-second timeout. After a technical failure (interrupted connection, inaccessible executable, or timeout), it waits three seconds and retries once. If the second attempt also fails for a technical reason, it attempts one automatic restart of Codex Quota Tray. The replacement instance cannot automatically restart itself, even after a later successful reading; a new manual launch re-enables this fallback restart. Authentication and Codex response errors do not trigger this recovery. Attempts are recorded in `%LOCALAPPDATA%\CodexQuotaTray\QuotaRefresh.log`.
 
 1. Install Codex CLI if needed.
 2. On first launch, right-click the icon and choose **Se connecter à Codex CLI…** (“Sign in to Codex CLI”). Complete sign-in in the window that opens.
